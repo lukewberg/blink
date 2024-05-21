@@ -1,0 +1,3 @@
+[workspace]
+members = ["lib_blink", "blink"]
+resolver = "2"
