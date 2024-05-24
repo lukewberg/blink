@@ -1,3 +1,3 @@
 [workspace]
-members = ["lib_blink", "blink"]
+members = ["lib_blink", "blink", "blink_macros"]
 resolver = "2"

@@ -1,7 +1,7 @@
-use lib_blink::types::VarInt;
+use lib_blink::types::UVarInt;
 
 fn main() {
     println!("Hello, world!");
-    let test = VarInt::from_net();
-    print!("{test}");
+    // let test = UVarInt::from_net();
+    // print!("{test}");
 }
