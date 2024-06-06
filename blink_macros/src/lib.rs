@@ -1,3 +1,4 @@
+use proc_macro::TokenStream;
 use proc_macro2::token_stream;
 use quote::quote;
 use syn;
@@ -17,16 +18,30 @@ fn impl_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     let encoded_fields = match fields {
         syn::Fields::Named(named_fields) => {
             let field_encoders = named_fields.named.iter().map(|field| {
-                let field_name = field.ident.unwrap();
-                let field_type = field.ty;
-                quote! {
-                    let value = #field_type::from_le_bytes();
+                let field_name = field.ident.clone().unwrap();
+                let field_type = field.ty.clone();
+                match field_type {
+                    syn::Type::Array(_) => todo!(),
+                    syn::Type::Path(type_path) => {
+                        let mut result = quote! {};
+                        if let Some(ident) = type_path.path.get_ident() {
+                            if ident == "String" {
+                                result = quote! {
+                                    let value = *#field_name.to_be_bytes();
+                                };
+                            }
+                        }
+                        result
+                    }
+                    syn::Type::Slice(_) => todo!(),
+                    syn::Type::Tuple(_) => todo!(),
+                    _ => todo!(),
                 }
             });
             quote! {
                 #(#field_encoders)*
             }
-        },
+        }
         _ => panic!("Packet can only be derived for structs with named fields!"),
     };
     let gen = quote! {
@@ -34,7 +49,7 @@ fn impl_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
             fn encode(&self) -> Vec<u8> {
                 let mut buffer: Vec<u8> = Vec::new();
                 if let syn::Fields::Named(fields) = #fields {
-                    
+
                 }
                 buffer
             }
