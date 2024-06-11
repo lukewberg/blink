@@ -27,8 +27,13 @@ fn impl_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
                         if let Some(ident) = type_path.path.get_ident() {
                             if ident == "String" {
                                 result = quote! {
-                                    let value = *#field_name.to_be_bytes();
+                                    buffer.push(#field_name.as_bytes().reverse());
                                 };
+                            } else if ident == "i8" || ident == "i16" || ident == "i32" || ident == "i64" || ident == "i128" ||
+                                ident == "u8" || ident == "u16" || ident == "u32" || ident == "u64" || ident == "u128" || ident == "f32" || ident == "f64" || ident == "usize" || ident == "iusize" {
+                                result = quote! {
+                                    buffer.push(#field_name.to_be_bytes());
+                                }
                             }
                         }
                         result
@@ -44,25 +49,23 @@ fn impl_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
         }
         _ => panic!("Packet can only be derived for structs with named fields!"),
     };
+
+    let decoded_fields = match fields {
+        syn::Fields::Named(named_fields) => {
+            
+        }
+        _ => panic!("Packet can only be derived for structs with named fields!"),
+    };
     let gen = quote! {
         impl Packet for #name where #name : Sized {
             fn encode(&self) -> Vec<u8> {
-                let mut buffer: Vec<u8> = Vec::new();
-                if let syn::Fields::Named(fields) = #fields {
-
-                }
+                let mut buffer: Vec<u8> = Vec::with_capacity(std::mem::size_of::<#name>());
+                #encoded_fields
                 buffer
             }
 
             fn decode(buffer: &[u8]) -> Self {
-                // let mut offset = 0;
-                // #fields.iter().for_each(|field| {
-                //     let field = &field.ident;
-                //     let value = &field.ident;
-                //     let size = value.size();
-                //     let value = value.decode(&buffer[offset..offset + size]);
-                //     offset += size;
-                // });
+
                 Self {}
             }
         }

@@ -25,7 +25,7 @@ impl UVarInt {
     ///
     /// ```rust
     /// let buffer = [0b10101010, 0b10000001];
-    /// let result = VarInt::parse(&buffer);
+    /// let result = UVarInt::parse(&buffer);
     /// assert_eq!(result, Ok(170));
     /// ```
     pub fn parse(buffer: &[u8]) -> Result<u32, &'static str> {

@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 blink_macros = { path = "../blink_macros" }
+flate2 = { version = "1.0.30" }

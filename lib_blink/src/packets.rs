@@ -10,7 +10,8 @@ pub struct LoginPacket {
 
 #[derive(Packet)]
 pub struct PlayStatus {
-    pub status: i32
+    pub status: i32,
+    pub test: String,
 }
 
 pub struct DisconnectPacket {

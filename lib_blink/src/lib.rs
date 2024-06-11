@@ -1,6 +1,7 @@
 pub mod packets;
 pub mod traits;
 pub mod types;
+mod nbt;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
