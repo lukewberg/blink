@@ -8,7 +8,7 @@ pub struct UVarInt {
 //         self.net = self.data.to_be_bytes();
 //         &self.net
 //     }
-    
+
 //     fn from_net(buffer: &[u8]) -> Self {
 //         let data = UVarInt::parse(buffer).expect("Bye!");
 //         Self {
