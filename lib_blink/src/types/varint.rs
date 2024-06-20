@@ -1,20 +1,22 @@
-pub struct UVarInt {
-    data: u32,
-    net: [u8; 4],
+pub struct VarInt {
+    data: i32,
+    net: [u8; 4]
 }
 
-impl UVarInt {
+impl VarInt {
     /// Parses a BE byte buffer into an unsigned VarInt.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// use lib_blink::types::UVarInt;
+    /// use lib_blink::types::VarInt;
     /// let buffer = [0b10101010, 0b00000001];
-    /// let result = UVarInt::parse(&buffer);
-    /// assert_eq!(result, Ok(170));
+    /// let bytes = 170i32;
+    /// println!("{bytes:b}");
+    /// let result = VarInt::parse(&buffer);
+    /// assert_eq!(result, Ok(-170));
     /// ```
-    pub fn parse(buffer: &[u8]) -> Result<u32, &'static str> {
+    pub fn parse(buffer: &[u8]) -> Result<i32, &'static str> {
         let mut value = 0u32;
         let mut shift = 0;
         for &byte in buffer {
@@ -24,7 +26,7 @@ impl UVarInt {
 
             if (byte & 0b10000000) == 0 {
                 // MSB is 0, varint terminated
-                return Ok(value.to_le());
+                return Ok(value.to_le() as i32);
             }
 
             shift += 7;

@@ -3,13 +3,13 @@ use quote::{format_ident, quote};
 use syn;
 use syn::Type;
 
-#[proc_macro_derive(Packet)]
+#[proc_macro_derive(BedrockPacket)]
 pub fn packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = syn::parse(input).unwrap();
-    impl_packet_macro(&ast)
+    impl_bedrock_packet_macro(&ast)
 }
 
-fn impl_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
+fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     let name = &ast.ident;
     let fields = match &ast.data {
         syn::Data::Struct(data) => &data.fields,
@@ -80,8 +80,10 @@ fn impl_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
                         if let Some(ident) = type_path.path.get_ident() {
                             if ident == "String" {
                                 result = quote! {
-                                    let (split_buff, buffer) = buffer.split_at(std::mem::sizeof)
-                                    let #field_name = String::from_utf8(buffer.reverse())?;
+                                    let (mut split_buff, buffer) = buffer.split_at(std::mem::size_of::<#type_path>());
+                                    let mut split_buff_vec = split_buff.to_vec();
+                                    split_buff_vec.reverse();
+                                    let #field_name = String::from_utf8(split_buff_vec)?;
                                 };
                             } else {
                                 let read_method = match ident.to_string().as_str() {
@@ -131,7 +133,7 @@ fn impl_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
                 buffer
             }
 
-            fn decode(buffer: &[u8]) -> Result<Self, SerdeError> {
+            fn decode(buffer: &mut &[u8]) -> Result<Self, SerdeError> {
                 use byteorder::{ByteOrder, BigEndian};
                 #decoded_fields
             }
