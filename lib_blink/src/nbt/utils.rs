@@ -1,4 +1,4 @@
-use crate::nbt::TagType;
+use crate::nbt::NBTTag;
 use std::path::Path;
 
 pub struct NBTFile {
@@ -11,7 +11,7 @@ impl NBTFile {
         Ok(Self { data: bytes })
     }
 
-    pub fn parse(self) -> Option<TagType> {
+    pub fn parse(self) -> Option<NBTTag> {
         todo!()
     }
 }

@@ -1,4 +1,4 @@
-pub enum TagType {
+pub enum NBTTag {
     TagEnd,
     TagByte(i8),
     TagShort(i16),
@@ -40,22 +40,22 @@ pub struct NBTLongArray {
     data: Box<[i64]>,
 }
 
-impl TagType {
+impl NBTTag {
     pub fn id(&self) -> u8 {
         match *self {
-            TagType::TagEnd => 0x0,
-            TagType::TagByte(_) => 0x1,
-            TagType::TagShort(_) => 0x2,
-            TagType::TagInt(_) => 0x3,
-            TagType::TagLong(_) => 0x4,
-            TagType::TagFloat(_) => 0x5,
-            TagType::TagDouble(_) => 0x6,
-            TagType::TagByteArray(_) => 0x7,
-            TagType::TagString(_) => 0x8,
-            TagType::TagList(_) => 0x9,
-            TagType::TagCompound(_) => 0xa,
-            TagType::TagIntArray(_) => 0xb,
-            TagType::TagLongArray(_) => 0xc,
+            NBTTag::TagEnd => 0x0,
+            NBTTag::TagByte(_) => 0x1,
+            NBTTag::TagShort(_) => 0x2,
+            NBTTag::TagInt(_) => 0x3,
+            NBTTag::TagLong(_) => 0x4,
+            NBTTag::TagFloat(_) => 0x5,
+            NBTTag::TagDouble(_) => 0x6,
+            NBTTag::TagByteArray(_) => 0x7,
+            NBTTag::TagString(_) => 0x8,
+            NBTTag::TagList(_) => 0x9,
+            NBTTag::TagCompound(_) => 0xa,
+            NBTTag::TagIntArray(_) => 0xb,
+            NBTTag::TagLongArray(_) => 0xc,
         }
     }
 }

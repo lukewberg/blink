@@ -10,7 +10,6 @@ pub struct LoginPacket {
 #[derive(BedrockPacket)]
 pub struct PlayStatus {
     pub status: i32,
-    pub lol: i32,
     pub test: String,
 }
 

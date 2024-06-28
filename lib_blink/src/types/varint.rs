@@ -1,6 +1,6 @@
 pub struct VarInt {
     data: i32,
-    net: [u8; 4]
+    net: [u8; 4],
 }
 
 impl VarInt {
@@ -26,7 +26,7 @@ impl VarInt {
 
             if (byte & 0b10000000) == 0 {
                 // MSB is 0, varint terminated
-                return Ok(value.to_le() as i32);
+                return Ok(VarInt::zig_decode(value.to_le()));
             }
 
             shift += 7;
@@ -36,5 +36,25 @@ impl VarInt {
             }
         }
         Err("Buffer too short")
+    }
+
+    /// Zig-zag encodes an i32 and returns a u32
+    ///
+    ///# Examples
+    ///
+    ///```rust
+    /// use lib_blink::types::VarInt;
+    /// let num = -170;
+    /// let encoded = VarInt::zig_encode(num);
+    /// let decoded = VarInt::zig_decode(encoded);
+    ///
+    /// assert_eq!(decoded, num);
+    ///```
+    pub fn zig_encode(num: i32) -> u32 {
+        ((num << 1) ^ (num >> 31)) as u32
+    }
+
+    pub fn zig_decode(num: u32) -> i32 {
+        ((num >> 1) as i32) ^ -((num & 1) as i32)
     }
 }
