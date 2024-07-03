@@ -1,3 +1,5 @@
+use ahash::AHashMap;
+
 pub enum NBTTag {
     TagEnd,
     TagByte(i8),
@@ -9,7 +11,7 @@ pub enum NBTTag {
     TagByteArray(NBTByteArray),
     TagString(NBTString),
     TagList(NBTList),
-    TagCompound(Box<[Self]>),
+    TagCompound(NBTCompound),
     TagIntArray(NBTIntArray),
     TagLongArray(NBTLongArray),
 }
@@ -28,6 +30,10 @@ pub struct NBTList {
     id: u8,
     length: i32,
     data: Vec<u8>,
+}
+
+pub struct NBTCompound {
+    data: AHashMap<String, NBTTag>,
 }
 
 pub struct NBTIntArray {

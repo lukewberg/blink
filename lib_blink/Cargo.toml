@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ahash = "0.8.11"
 blink_macros = { path = "../blink_macros" }
 byteorder = "1.5.0"
 flate2 = { version = "1.0.30" }
