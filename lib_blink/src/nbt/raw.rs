@@ -106,9 +106,50 @@ where
     Ok(())
 }
 
+#[inline]
 pub fn read_byte<R>(reader: &mut R) -> Result<i8, io::Error>
 where
     R: Read,
 {
     Ok(reader.read_i8()?)
+}
+
+#[inline]
+pub fn read_short<R>(reader: &mut R) -> Result<i16, io::Error>
+where
+    R: Read,
+{
+    Ok(reader.read_i16::<BigEndian>()?)
+}
+
+#[inline]
+pub fn read_int<R>(reader: &mut R) -> Result<i32, io::Error>
+where
+    R: Read,
+{
+    Ok(reader.read_i32::<BigEndian>()?)
+}
+
+#[inline]
+pub fn read_long<R>(reader: &mut R) -> Result<i64, io::Error>
+where
+    R: Read,
+{
+    Ok(reader.read_i64::<BigEndian>()?)
+}
+
+#[inline]
+pub fn read_float<R>(reader: &mut R) -> Result<f32, io::Error>
+where
+    R: Read,
+{
+    Ok(reader.read_f32::<BigEndian>()?)
+}
+
+#[inline]
+pub fn read_double<R>(reader: &mut R) -> Result<f64, io::Error>
+where
+    R: Read,
+{
+    Ok(reader.read_f64::<BigEndian>()?)
 }
