@@ -1,5 +1,7 @@
 mod nbt;
 pub mod packets;
+#[cfg(test)]
+pub mod tests;
 pub mod traits;
 pub mod types;
 
@@ -13,20 +15,20 @@ pub fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+//     #[test]
+//     fn it_works() {
+//         let result = add(2, 2);
+//         assert_eq!(result, 4);
+//     }
 
-    #[test]
-    fn decode_varint() {
-        let buffer = [0b10101010, 0b00000001];
-        let result = types::UVarInt::parse(&buffer);
-        assert_eq!(result, Ok(170));
-    }
-}
+//     #[test]
+//     fn decode_varint() {
+//         let buffer = [0b10101010, 0b00000001];
+//         let result = types::UVarInt::parse(&buffer);
+//         assert_eq!(result, Ok(170));
+//     }
+// }

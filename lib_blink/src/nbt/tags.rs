@@ -2,28 +2,29 @@ use ahash::AHashMap;
 
 pub enum NBTTag {
     TagEnd,
-    TagByte(i8),
-    TagShort(i16),
-    TagInt(i32),
-    TagLong(i64),
-    TagFloat(f32),
-    TagDouble(f64),
-    TagByteArray(NBTByteArray),
-    TagString(NBTString),
-    TagList(NBTList),
-    TagCompound(NBTCompound),
-    TagIntArray(NBTIntArray),
-    TagLongArray(NBTLongArray),
+    TagByte(Option<i8>),
+    TagShort(Option<i16>),
+    TagInt(Option<i32>),
+    TagLong(Option<i64>),
+    TagFloat(Option<f32>),
+    TagDouble(Option<f64>),
+    TagByteArray(Option<NBTByteArray>),
+    TagString(Option<NBTString>),
+    TagList(Option<NBTList>),
+    TagCompound(Option<NBTCompound>),
+    TagIntArray(Option<NBTIntArray>),
+    TagLongArray(Option<NBTLongArray>),
+    None,
 }
 
 pub struct NBTByteArray {
-    size: i32,
-    data: Vec<u8>,
+    pub size: i32,
+    pub data: Vec<u8>,
 }
 
 pub struct NBTString {
-    length: u16,
-    data: Vec<u8>,
+    pub length: i16,
+    pub data: String,
 }
 
 pub struct NBTList {
@@ -33,7 +34,8 @@ pub struct NBTList {
 }
 
 pub struct NBTCompound {
-    data: AHashMap<String, NBTTag>,
+    pub name: Option<String>,
+    pub data: AHashMap<String, NBTTag>,
 }
 
 pub struct NBTIntArray {
@@ -62,6 +64,26 @@ impl NBTTag {
             NBTTag::TagCompound(_) => 0xa,
             NBTTag::TagIntArray(_) => 0xb,
             NBTTag::TagLongArray(_) => 0xc,
+            NBTTag::None => 0x0,
+        }
+    }
+
+    pub fn get_tag(byte: &i8) -> NBTTag {
+        match *byte {
+            0x0 => NBTTag::TagEnd,
+            0x1 => NBTTag::TagByte(None),
+            0x2 => NBTTag::TagShort(None),
+            0x3 => NBTTag::TagInt(None),
+            0x4 => NBTTag::TagLong(None),
+            0x5 => NBTTag::TagFloat(None),
+            0x6 => NBTTag::TagDouble(None),
+            0x7 => NBTTag::TagByteArray(None),
+            0x8 => NBTTag::TagString(None),
+            0x9 => NBTTag::TagList(None),
+            0xa => NBTTag::TagCompound(None),
+            0xb => NBTTag::TagIntArray(None),
+            0xc => NBTTag::TagLongArray(None),
+            _ => NBTTag::None,
         }
     }
 }
