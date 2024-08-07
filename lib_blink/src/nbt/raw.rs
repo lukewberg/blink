@@ -5,7 +5,7 @@ use std::io::{self, Read};
 use thiserror::Error;
 use zerocopy::LittleEndian;
 
-use super::{NBTByteArray, NBTString};
+use super::{NBTByteArray, NBTIntArray, NBTLongArray, NBTString};
 
 #[inline]
 pub fn write_byte<W>(dst: &mut W, value: i8) -> Result<(), NBTIoError>
@@ -164,6 +164,21 @@ where
     let mut data: Vec<u8> = Vec::with_capacity(size as usize);
     reader.read_exact(&mut data)?;
     Ok(NBTByteArray { size, data })
+}
+
+#[inline]
+pub fn read_int_array<R>(reader: &mut R) -> Result<NBTIntArray, NBTIoError> where R: Read {
+    let size = reader.read_i32::<BigEndian>()?;
+    let mut data: Vec<u8> = Vec::with_capacity(size as usize);
+    reader.read_exact(&mut data)?;
+    Ok(NBTIntArray { size, data })
+}
+
+pub fn read_long_array<R>(reader: &mut R) -> Result<NBTLongArray, NBTIoError> where R: Read {
+    let size = reader.read_i32::<BigEndian>()?;
+    let mut data: Vec<i64> = Vec::with_capacity(size as usize);
+    reader.read_exact(&mut data)?;
+    Ok(NBTLongArray { size, data })
 }
 
 #[inline]

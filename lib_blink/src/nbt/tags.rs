@@ -28,9 +28,8 @@ pub struct NBTString {
 }
 
 pub struct NBTList {
-    id: u8,
-    length: i32,
-    data: Vec<u8>,
+    pub length: i32,
+    pub data: Vec<u8>,
 }
 
 pub struct NBTCompound {
