@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ahash = "0.8.11"
 blink_macros = { path = "../blink_macros" }
-byteorder = "1.5.0"
-cesu8 = "1.1.0"
-flate2 = { version = "1.0.30" }
-num = "0.4.3"
-thiserror = "1.0.61"
-zerocopy = { version = "0.7.34", features = ["derive", "zerocopy-derive"] }
+ahash.workspace = true
+byteorder.workspace = true
+cesu8.workspace = true
+flate2.workspace = true
+num.workspace = true
+thiserror.workspace = true
+zerocopy.workspace = true

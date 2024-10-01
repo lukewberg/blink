@@ -3,7 +3,7 @@ use thiserror::Error;
 use crate::nbt::raw;
 use std::io::BufRead;
 
-use super::{NBTCompound, NBTIoError, NBTList, NBTTag};
+use super::{NBTCompound, NBTIoError, NBTList, NBTPrimitive, NBTTag};
 
 pub struct NBTLexer {}
 
@@ -26,33 +26,39 @@ impl NBTLexer {
     {
         let mut root_compound = NBTCompound {
             name: None,
-            data: ahash::AHashMap::<String, NBTTag>::with_capacity(10),
+            payload: ahash::AHashMap::<String, NBTTag>::with_capacity(10),
         };
 
         // After getting the name, we need to scan through for the tags until we hit a TagEnd.
         loop {
-            let (tag_name, tag) = Self::lex_tag(reader)?;
+            let tag = Self::lex_tag(reader)?;
             match tag {
                 NBTTag::TagEnd => {
                     println!("Found End Tag!");
                     break;
                 }
                 _ => {
+                    let tag_type = tag.id();
                     root_compound
-                        .data
-                        .insert(tag_name.expect("Tag must have a name!"), tag);
+                        .payload
+                        .insert(tag.name().expect("Tag must have a name!"), tag);
                 }
             }
         }
-        todo!()
-        // return Ok();
+
+        Ok(NBTTag::TagCompound(Some(root_compound)))
     }
 
     pub fn lex_byte<R>(reader: &mut R) -> Result<NBTTag, NBTLexError>
     where
         R: BufRead,
     {
-        let result = raw::read_byte(reader).map(|b| NBTTag::TagByte(Some(b)));
+        let result = raw::read_byte(reader).map(|b| {
+            NBTTag::TagByte(Some(NBTPrimitive {
+                name: None,
+                payload: b,
+            }))
+        });
         Ok(result?)
     }
 
@@ -60,7 +66,12 @@ impl NBTLexer {
     where
         R: BufRead,
     {
-        let result = raw::read_short(reader).map(|s| NBTTag::TagShort(Some(s)));
+        let result = raw::read_short(reader).map(|s| {
+            NBTTag::TagShort(Some(NBTPrimitive {
+                name: None,
+                payload: s,
+            }))
+        });
         Ok(result?)
     }
 
@@ -68,7 +79,12 @@ impl NBTLexer {
     where
         R: BufRead,
     {
-        let result = raw::read_int(reader).map(|i| NBTTag::TagInt(Some(i)));
+        let result = raw::read_int(reader).map(|i| {
+            NBTTag::TagInt(Some(NBTPrimitive {
+                name: None,
+                payload: i,
+            }))
+        });
         Ok(result?)
     }
 
@@ -76,7 +92,12 @@ impl NBTLexer {
     where
         R: BufRead,
     {
-        let result = raw::read_long(reader).map(|l| NBTTag::TagLong(Some(l)));
+        let result = raw::read_long(reader).map(|l| {
+            NBTTag::TagLong(Some(NBTPrimitive {
+                name: None,
+                payload: l,
+            }))
+        });
         Ok(result?)
     }
 
@@ -84,7 +105,12 @@ impl NBTLexer {
     where
         R: BufRead,
     {
-        let result = raw::read_float(reader).map(|f| NBTTag::TagFloat(Some(f)));
+        let result = raw::read_float(reader).map(|f| {
+            NBTTag::TagFloat(Some(NBTPrimitive {
+                name: None,
+                payload: f,
+            }))
+        });
         Ok(result?)
     }
 
@@ -92,7 +118,12 @@ impl NBTLexer {
     where
         R: BufRead,
     {
-        let result = raw::read_double(reader).map(|d| NBTTag::TagDouble(Some(d)));
+        let result = raw::read_double(reader).map(|d| {
+            NBTTag::TagDouble(Some(NBTPrimitive {
+                name: None,
+                payload: d,
+            }))
+        });
         Ok(result?)
     }
 
@@ -132,8 +163,9 @@ impl NBTLexer {
             }
         }
         Ok(NBTTag::TagList(Some(NBTList {
+            name: None,
             length: length as i32,
-            data: tag_vec,
+            payload: tag_vec,
         })))
     }
 
@@ -145,7 +177,10 @@ impl NBTLexer {
         Ok(result?)
     }
 
-    pub fn lex_long_array<R>(reader: &mut R) -> Result<NBTTag, NBTLexError> where R: BufRead {
+    pub fn lex_long_array<R>(reader: &mut R) -> Result<NBTTag, NBTLexError>
+    where
+        R: BufRead,
+    {
         let result = raw::read_long_array(reader).map(|l| NBTTag::TagLongArray(Some(l)));
         Ok(result?)
     }
@@ -158,7 +193,7 @@ impl NBTLexer {
         let tag_type = NBTTag::get_tag(&id);
 
         let tag: NBTTag = match tag_type {
-            NBTTag::TagEnd => todo!(),
+            NBTTag::TagEnd => NBTTag::TagEnd,
             NBTTag::TagByte(_) => Self::lex_byte(reader)?,
             NBTTag::TagShort(_) => Self::lex_short(reader)?,
             NBTTag::TagInt(_) => Self::lex_int(reader)?,
@@ -170,22 +205,27 @@ impl NBTLexer {
             NBTTag::TagList(_) => Self::lex_list(reader)?,
             NBTTag::TagCompound(_) => Self::lex_compound(reader)?,
             NBTTag::TagIntArray(_) => Self::lex_int_array(reader)?,
-            NBTTag::TagLongArray(_) => todo!(),
+            NBTTag::TagLongArray(_) => Self::lex_long_array(reader)?,
             NBTTag::None => return Err(NBTLexError::UnexpectedToken),
         };
         Ok(tag)
     }
 
-    pub fn lex_tag<R>(reader: &mut R) -> Result<(Option<String>, NBTTag), NBTLexError>
+    pub fn lex_tag<R>(reader: &mut R) -> Result<NBTTag, NBTLexError>
     where
         R: BufRead,
     {
         let id = raw::read_byte(reader)?;
         let tag_type = NBTTag::get_tag(&id);
-        let tag_name = raw::read_tag_name(reader)?;
 
-        let tag: NBTTag = match tag_type {
-            NBTTag::TagEnd => todo!(),
+        // If the tag is not NBTTag::TagEnd, it should have a name
+        if let NBTTag::TagEnd = tag_type {
+            return Ok(tag_type);
+        }
+
+        let tag_name = raw::read_tag_name(reader)?;
+        let mut tag: NBTTag = match tag_type {
+            NBTTag::TagEnd => NBTTag::TagEnd,
             NBTTag::TagByte(_) => Self::lex_byte(reader)?,
             NBTTag::TagShort(_) => Self::lex_short(reader)?,
             NBTTag::TagInt(_) => Self::lex_int(reader)?,
@@ -197,10 +237,14 @@ impl NBTLexer {
             NBTTag::TagList(_) => Self::lex_list(reader)?,
             NBTTag::TagCompound(_) => Self::lex_compound(reader)?,
             NBTTag::TagIntArray(_) => Self::lex_int_array(reader)?,
-            NBTTag::TagLongArray(_) => todo!(),
+            NBTTag::TagLongArray(_) => Self::lex_long_array(reader)?,
             NBTTag::None => return Err(NBTLexError::UnexpectedToken),
         };
-        Ok((tag_name, tag))
+
+        if let Some(name) = tag_name {
+            tag.set_name(name);
+        }
+        Ok(tag)
     }
 }
 

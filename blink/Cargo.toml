@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 lib_blink = { path = "../lib_blink" }
+tokio.workspace = true

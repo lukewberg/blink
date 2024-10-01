@@ -18,9 +18,9 @@ pub fn test_lex_compound() {
     let mut reader = BufReader::new(file);
     let result = NBTLexer::lex_tag(&mut reader);
     match result {
-        Ok((tag_name, compound_tag)) => {
+        Ok(compound_tag) => {
             if let NBTTag::TagCompound(Some(nbt_compound)) = compound_tag {
-                assert_eq!("Level", tag_name.unwrap());
+                assert_eq!("Level", nbt_compound.name.unwrap());
             } else {
                 assert!(false);
             }
@@ -42,3 +42,6 @@ pub fn test_lex_compound() {
     //     assert!(false);
     // }
 }
+
+#[test]
+pub fn test_convert_be_vec_in_place() {}

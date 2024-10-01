@@ -1,9 +1,12 @@
 // Utility functions for reading, writing and parsing raw NBT data.
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{self, Read};
+use std::{
+    io::{self, Read},
+    mem::{self, ManuallyDrop},
+    ptr,
+};
 use thiserror::Error;
-use zerocopy::LittleEndian;
 
 use super::{NBTByteArray, NBTIntArray, NBTLongArray, NBTString};
 
@@ -161,24 +164,47 @@ where
     R: Read,
 {
     let size = reader.read_i32::<BigEndian>()?;
-    let mut data: Vec<u8> = Vec::with_capacity(size as usize);
-    reader.read_exact(&mut data)?;
-    Ok(NBTByteArray { size, data })
+    let mut payload: Vec<u8> = Vec::with_capacity(size as usize);
+    reader.read_exact(&mut payload)?;
+    Ok(NBTByteArray {
+        name: None,
+        size,
+        payload,
+    })
 }
 
 #[inline]
-pub fn read_int_array<R>(reader: &mut R) -> Result<NBTIntArray, NBTIoError> where R: Read {
+pub fn read_int_array<R>(reader: &mut R) -> Result<NBTIntArray, NBTIoError>
+where
+    R: Read,
+{
     let size = reader.read_i32::<BigEndian>()?;
-    let mut data: Vec<u8> = Vec::with_capacity(size as usize);
-    reader.read_exact(&mut data)?;
-    Ok(NBTIntArray { size, data })
+    let mut bytes = Vec::<u8>::with_capacity(size as usize * 4);
+    reader.read_exact(&mut bytes)?;
+
+    let result = convert_be_vec_in_place(bytes, i32::from_be_bytes);
+    Ok(NBTIntArray {
+        name: None,
+        size,
+        payload: result,
+    })
 }
 
-pub fn read_long_array<R>(reader: &mut R) -> Result<NBTLongArray, NBTIoError> where R: Read {
+#[inline]
+pub fn read_long_array<R>(reader: &mut R) -> Result<NBTLongArray, NBTIoError>
+where
+    R: Read,
+{
     let size = reader.read_i32::<BigEndian>()?;
-    let mut data: Vec<i64> = Vec::with_capacity(size as usize);
+    let mut data: Vec<u8> = Vec::with_capacity(size as usize * 8);
     reader.read_exact(&mut data)?;
-    Ok(NBTLongArray { size, data })
+
+    let result = convert_be_vec_in_place(data, i64::from_be_bytes);
+    Ok(NBTLongArray {
+        name: None,
+        size,
+        payload: result,
+    })
 }
 
 #[inline]
@@ -194,18 +220,19 @@ where
         Err(_) => return Err(NBTIoError::InvalidCESU8String),
     };
     Ok(NBTString {
+        name: None,
         length,
-        data: decoded_str.into_owned(),
+        payload: decoded_str.into_owned(),
     })
 }
 
-pub fn read_list_header<R>(reader: &mut R) -> Result<(i8, i16), NBTIoError>
+pub fn read_list_header<R>(reader: &mut R) -> Result<(i8, i32), NBTIoError>
 where
     R: Read,
 {
     // Because lists are a composite type, we can only read the type and length of the list. Lexing will handle the rest.
     let list_type = reader.read_i8()?;
-    let length = reader.read_i16::<BigEndian>()?;
+    let length = reader.read_i32::<BigEndian>()?;
     Ok((list_type, length))
 }
 
@@ -225,6 +252,32 @@ where
     } else {
         return Ok(None);
     }
+}
+
+pub fn convert_be_vec_in_place<I, const SIZE: usize>(
+    mut vec: Vec<u8>,
+    convert: fn([u8; SIZE]) -> I,
+) -> Vec<I> {
+    assert!(
+        vec.len() % SIZE == 0,
+        "The length of the vector must be divisible by the size of the desired primative!"
+    );
+    let new_len = vec.len() / SIZE;
+
+    let read = vec.as_ptr() as *const [u8; SIZE];
+    let write = vec.as_mut_ptr();
+    let capacity = vec.capacity() / SIZE;
+    mem::forget(vec);
+
+    unsafe {
+        for i in 0..new_len {
+            let be_value = ptr::read(read.add(i * SIZE));
+            let native_value = convert(be_value); // Converts big-endian to native endian
+            ptr::write(write.add(i * SIZE) as *mut I, native_value);
+        }
+    }
+
+    unsafe { Vec::from_raw_parts(write as *mut I, new_len, capacity) }
 }
 
 #[derive(Error, Debug)]
