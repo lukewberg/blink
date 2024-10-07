@@ -6,7 +6,7 @@ resolver = "2"
 ahash = "0.8.11"
 byteorder = "1.5.0"
 cesu8 = "1.1.0"
-flate2 = { version = "1.0.30" }
+flate2 = { version = "1.0.30", features = ["zlib"] }
 num = "0.4.3"
 thiserror = "1.0.61"
 zerocopy = { version = "0.7.34", features = ["derive", "zerocopy-derive"] }

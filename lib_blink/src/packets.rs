@@ -1,13 +1,15 @@
+use blink_macros::{BedrockPacket, JavaPacket};
+
 use crate::traits::Packet;
 use crate::types::SerdeError;
-use blink_macros::BedrockPacket;
 
 pub struct LoginPacket {
     pub client_network_version: i32,
     pub connection_request: String,
 }
 
-#[derive(BedrockPacket)]
+#[derive(JavaPacket)]
+#[repr(C)]
 pub struct PlayStatus {
     pub status: i32,
     pub test: String,

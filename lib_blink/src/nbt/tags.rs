@@ -1,5 +1,6 @@
 use ahash::AHashMap;
 
+#[derive(Debug)]
 pub enum NBTTag {
     TagEnd,
     TagByte(Option<NBTPrimitive<i8>>),
@@ -62,40 +63,47 @@ impl NBTTag {
     }
 }
 
+#[derive(Debug)]
 pub struct NBTPrimitive<T> {
     pub name: Option<String>,
     pub payload: T,
 }
 
+#[derive(Debug)]
 pub struct NBTByteArray {
     pub name: Option<String>,
     pub size: i32,
     pub payload: Vec<u8>,
 }
 
+#[derive(Debug)]
 pub struct NBTString {
     pub name: Option<String>,
     pub length: i16,
     pub payload: String,
 }
 
+#[derive(Debug)]
 pub struct NBTList<NBTTag> {
     pub name: Option<String>,
     pub length: i32,
     pub payload: Vec<NBTTag>,
 }
 
+#[derive(Debug)]
 pub struct NBTCompound {
     pub name: Option<String>,
     pub payload: AHashMap<String, NBTTag>,
 }
 
+#[derive(Debug)]
 pub struct NBTIntArray {
     pub name: Option<String>,
     pub size: i32,
     pub payload: Vec<i32>,
 }
 
+#[derive(Debug)]
 pub struct NBTLongArray {
     pub name: Option<String>,
     pub size: i32,

@@ -34,7 +34,6 @@ impl NBTLexer {
             let tag = Self::lex_tag(reader)?;
             match tag {
                 NBTTag::TagEnd => {
-                    println!("Found End Tag!");
                     break;
                 }
                 _ => {
@@ -149,19 +148,15 @@ impl NBTLexer {
     {
         // Get list type and length
         let (list_type, length) = raw::read_list_header(reader)?;
+        let tag_type = NBTTag::get_tag(&list_type);
         let mut tag_vec: Vec<NBTTag> = Vec::with_capacity(length as usize);
-        loop {
+
+        while tag_vec.len() < length as usize {
             // Lists contain nameless tags
-            let tag = Self::lex_tag_nameless(reader)?;
-            match tag {
-                NBTTag::TagEnd => {
-                    break;
-                }
-                _ => {
-                    tag_vec.push(tag);
-                }
-            }
+            let tag = Self::lex_tag_nameless(reader, &tag_type)?;
+            tag_vec.push(tag);
         }
+
         Ok(NBTTag::TagList(Some(NBTList {
             name: None,
             length: length as i32,
@@ -185,13 +180,10 @@ impl NBTLexer {
         Ok(result?)
     }
 
-    pub fn lex_tag_nameless<R>(reader: &mut R) -> Result<NBTTag, NBTLexError>
+    pub fn lex_tag_nameless<R>(reader: &mut R, tag_type: &NBTTag) -> Result<NBTTag, NBTLexError>
     where
         R: BufRead,
     {
-        let id = raw::read_byte(reader)?;
-        let tag_type = NBTTag::get_tag(&id);
-
         let tag: NBTTag = match tag_type {
             NBTTag::TagEnd => NBTTag::TagEnd,
             NBTTag::TagByte(_) => Self::lex_byte(reader)?,

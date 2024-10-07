@@ -19,6 +19,7 @@ pub fn test_lex_compound() {
     let result = NBTLexer::lex_tag(&mut reader);
     match result {
         Ok(compound_tag) => {
+            println!("Result: {:?}", compound_tag);
             if let NBTTag::TagCompound(Some(nbt_compound)) = compound_tag {
                 assert_eq!("Level", nbt_compound.name.unwrap());
             } else {
@@ -30,17 +31,6 @@ pub fn test_lex_compound() {
             assert!(false);
         }
     }
-    // if let Ok((tag_name, compound_tag)) = result {
-    //     assert_eq!("Level", tag_name.unwrap());
-    // } else {
-    //     assert!(false);
-    // }
-
-    // if let NBTTag::TagCompound(Some(nbt_compound)) = compound_tag {
-    //     assert_eq!("Level", tag_name.unwrap());
-    // } else {
-    //     assert!(false);
-    // }
 }
 
 #[test]

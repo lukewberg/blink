@@ -164,7 +164,7 @@ where
     R: Read,
 {
     let size = reader.read_i32::<BigEndian>()?;
-    let mut payload: Vec<u8> = Vec::with_capacity(size as usize);
+    let mut payload = vec![0u8; size as usize];
     reader.read_exact(&mut payload)?;
     Ok(NBTByteArray {
         name: None,
@@ -179,7 +179,7 @@ where
     R: Read,
 {
     let size = reader.read_i32::<BigEndian>()?;
-    let mut bytes = Vec::<u8>::with_capacity(size as usize * 4);
+    let mut bytes = vec![0u8; size as usize * 4];
     reader.read_exact(&mut bytes)?;
 
     let result = convert_be_vec_in_place(bytes, i32::from_be_bytes);
@@ -196,7 +196,7 @@ where
     R: Read,
 {
     let size = reader.read_i32::<BigEndian>()?;
-    let mut data: Vec<u8> = Vec::with_capacity(size as usize * 8);
+    let mut data = vec![0u8; size as usize * 8];
     reader.read_exact(&mut data)?;
 
     let result = convert_be_vec_in_place(data, i64::from_be_bytes);
