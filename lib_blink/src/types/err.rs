@@ -1,7 +1,11 @@
-use std::string::FromUtf8Error;
+use std::{error, string::FromUtf8Error};
 use thiserror::Error;
+
+use super::VarIntError;
 #[derive(Error, Debug)]
 pub enum SerdeError {
     #[error("Failed to deserialize String!")]
     StringFromUtf8(#[from] FromUtf8Error),
+    #[error("Failed to parse varint from packet!")]
+    VarInt(#[from] VarIntError),
 }

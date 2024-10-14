@@ -1,15 +1,32 @@
-use std::io::Read;
+use std::{io::Read, sync::atomic::AtomicUsize};
 
 use crate::types::{SerdeError, VarInt};
 use flate2::read::ZlibDecoder;
+
+pub const MAX_SIZE: usize = 2097151;
+pub static COMPRESSION_THRESHOLD: AtomicUsize = AtomicUsize::new(0);
 
 pub trait Packet: Sized {
     fn encode(self) -> Vec<u8>;
     fn decode(buffer: &mut &[u8]) -> Result<Self, SerdeError>;
 
     /// Convert a zlib-compressed raw packet into the target packet type
-    fn decompress(buffer: &mut &[u8]) -> Result<Self, SerdeError> {
-        let mut decoder = ZlibDecoder::new(buffer);
+    fn decompress<R>(reader: &mut R) -> Result<Self, SerdeError>
+    where
+        R: Read,
+    {
+        let packet_length = VarInt::parse(reader)?;
+        let data_length = VarInt::parse(reader)?;
+        let packet_id = VarInt::parse(reader)?;
+
+        let is_compressed = data_length > 0;
+
+        if is_compressed {
+            //
+        }
+
+        // TODO: Research and extend this function to handle compressed
+        let mut decoder = ZlibDecoder::new(reader);
         let mut decoded_buf = Vec::new();
         decoder.read_to_end(&mut decoded_buf);
         Self::decode(&mut decoded_buf.as_slice())

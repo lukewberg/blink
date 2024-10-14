@@ -55,8 +55,6 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                         }
                         result
                     }
-                    syn::Type::Slice(_) => panic!(),
-                    syn::Type::Tuple(_) => panic!(),
                     _ => panic!(),
                 }
             });
@@ -156,7 +154,6 @@ fn impl_java_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     };
     let encoded_fields = match fields {
         syn::Fields::Named(fields_named) => todo!(),
-        syn::Fields::Unnamed(fields_unnamed) => todo!(),
-        syn::Fields::Unit => todo!(),
+        _ => panic!(),
     };
 }
