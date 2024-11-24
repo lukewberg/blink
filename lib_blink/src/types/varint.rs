@@ -69,6 +69,12 @@ impl VarInt {
     }
 }
 
+impl Read for VarInt {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        todo!()
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum VarIntError {
     #[error("Varint too long!")]

@@ -147,13 +147,5 @@ pub fn java_packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::T
 }
 
 fn impl_java_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
-    let name = &ast.ident;
-    let fields = match &ast.data {
-        syn::Data::Struct(data) => &data.fields,
-        _ => panic!("Packet can only be derived for structs"),
-    };
-    let encoded_fields = match fields {
-        syn::Fields::Named(fields_named) => todo!(),
-        _ => panic!(),
-    };
+    impl_bedrock_packet_macro(ast)
 }

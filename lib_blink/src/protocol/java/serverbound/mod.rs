@@ -3,7 +3,7 @@ pub mod login;
 pub mod play;
 pub mod status;
 
-pub enum Clientbound {
+pub enum Serverbound {
     Configuration(self::configuration::Packet),
     Login(self::login::Packet),
     Play(self::play::Packet),
