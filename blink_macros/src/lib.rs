@@ -15,11 +15,13 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
         syn::Data::Struct(data) => &data.fields,
         _ => panic!("Packet can only be derived for structs"),
     };
+
     let encoded_fields = match fields {
         syn::Fields::Named(named_fields) => {
             let field_encoders = named_fields.named.iter().map(|field| {
                 let field_name = field.ident.clone().unwrap();
                 let field_type = field.ty.clone();
+
                 match field_type {
                     syn::Type::Array(_) => panic!(),
                     syn::Type::Path(type_path) => {
@@ -46,6 +48,7 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                                 || ident == "f64"
                                 || ident == "usize"
                                 || ident == "iusize"
+                                || ident == "VarInt"
                             {
                                 result = quote! {
                                     buffer.extend_from_slice(&self.#field_name.to_be_bytes());
@@ -78,6 +81,7 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                         if let Some(ident) = type_path.path.get_ident() {
                             if ident == "String" {
                                 result = quote! {
+                                    // Decoding string
                                     let (mut split_buff, buffer) = buffer.split_at(std::mem::size_of::<#type_path>());
                                     let mut split_buff_vec = split_buff.to_vec();
                                     split_buff_vec.reverse();
@@ -99,9 +103,11 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                                     "f64" => quote! {read_f64},
                                     "usize" => quote! {read_usize},
                                     "iusize" => quote! {read_iusize},
+                                    "VarInt" => quote! {read_varint},
                                     other => panic!("Unsupported primitive! {}", other),
                                 };
                                 result = quote! {
+                                    // decoding number primative
                                     let #field_name = BigEndian::#read_method(buffer);
                                 };
                             }
@@ -124,14 +130,14 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
         _ => panic!("Packet can only be derived for structs with named fields!"),
     };
     let gen = quote! {
-        impl Packet for #name where #name : Sized {
+        impl NetworkPacket for #name where #name : Sized {
             fn encode(self) -> Vec<u8> {
                 let mut buffer: Vec<u8> = Vec::with_capacity(std::mem::size_of::<#name>());
                 #encoded_fields
                 buffer
             }
 
-            fn decode(buffer: &mut &[u8]) -> Result<Self, SerdeError> {
+            fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError> where R: Read {
                 use byteorder::{ByteOrder, BigEndian};
                 #decoded_fields
             }

@@ -32,16 +32,16 @@ impl VarInt {
                 let byte_value = (byte & 0b01111111) as u32;
                 value |= byte_value << shift;
 
-                if (byte & 0b10000000) == 0 {
+                shift += 7;
+                if shift < 32 && (byte & 0b10000000) == 0 {
                     // MSB is 0, varint terminated
-                    return Ok(VarInt::zig_decode(value.to_le()));
+                    return Ok(value.to_le());
                 }
 
-                shift += 7;
-                if shift >= 70 {
-                    // Too many bytes, would overflow u32
-                    return Err(VarIntError::TooLong);
-                }
+                // if shift >= 70 {
+                //     // Too many bytes, would overflow u32
+                //     return Err(VarIntError::TooLong);
+                // }
             }
             return Err(VarIntError::UnableToRead);
         }

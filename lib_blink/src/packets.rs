@@ -1,6 +1,6 @@
 use blink_macros::{BedrockPacket, JavaPacket};
 
-use crate::traits::Packet;
+use crate::traits::NetworkPacket;
 use crate::types::SerdeError;
 
 pub struct LoginPacket {
