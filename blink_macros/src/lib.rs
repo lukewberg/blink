@@ -27,33 +27,23 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                     syn::Type::Path(type_path) => {
                         let mut result = quote! {};
                         if let Some(ident) = type_path.path.get_ident() {
-                            if ident == "String" {
-                                let var_name_bytes = format_ident!("{field_name}_bytes");
-                                result = quote! {
-                                    let mut #var_name_bytes = self.#field_name.into_bytes();
-                                    #var_name_bytes.reverse();
-                                    buffer.extend_from_slice(&#var_name_bytes[..]);
-                                };
-                            } else if ident == "i8"
-                                || ident == "i16"
-                                || ident == "i32"
-                                || ident == "i64"
-                                || ident == "i128"
-                                || ident == "u8"
-                                || ident == "u16"
-                                || ident == "u32"
-                                || ident == "u64"
-                                || ident == "u128"
-                                || ident == "f32"
-                                || ident == "f64"
-                                || ident == "usize"
-                                || ident == "iusize"
-                                || ident == "VarInt"
-                            {
-                                result = quote! {
-                                    buffer.extend_from_slice(&self.#field_name.to_be_bytes());
-                                    // buffer.write_#ident::<BigEndian>().unwarap();
+                            match &(*(ident.to_string())) {
+                                "String" => {
+                                    todo!();
                                 }
+                                "VarInt" => {
+                                    result = quote! {
+                                        buffer.append(&mut self.#field_name.encode());
+                                    }
+                                }
+                                "i8" | "i16" | "i32" | "i64" | "i128" | "u8" | "u16" | "u32"
+                                | "u64" | "u128" | "f32" | "f64" | "usize" | "iusize" => {
+                                    result = quote! {
+                                        buffer.extend_from_slice(&self.#field_name.to_be_bytes());
+                                        // buffer.write_#ident::<BigEndian>().unwarap();
+                                    }
+                                }
+                                _ => (),
                             }
                         }
                         result
@@ -82,10 +72,10 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                             if ident == "String" {
                                 result = quote! {
                                     // Decoding string
-                                    let (mut split_buff, buffer) = buffer.split_at(std::mem::size_of::<#type_path>());
-                                    let mut split_buff_vec = split_buff.to_vec();
-                                    split_buff_vec.reverse();
-                                    let #field_name = String::from_utf8(split_buff_vec)?;
+                                    // let (mut split_buff, buffer) = buffer.split_at(std::mem::size_of::<#type_path>());
+                                    // let mut split_buff_vec = split_buff.to_vec();
+                                    // split_buff_vec.reverse();
+                                    // let #field_name = String::from_utf8(split_buff_vec)?;
                                 };
                             } else {
                                 let read_method = match ident.to_string().as_str() {
@@ -108,7 +98,7 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                                 };
                                 result = quote! {
                                     // decoding number primative
-                                    let #field_name = BigEndian::#read_method(buffer);
+                                    let #field_name = buffer.#read_method::<BigEndian>()?;
                                 };
                             }
                             field_names.push(field_name.clone());
@@ -131,13 +121,14 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
     };
     let gen = quote! {
         impl NetworkPacket for #name where #name : Sized {
-            fn encode(self) -> Vec<u8> {
+            fn encode(mut self: #name) -> Vec<u8> {
+
                 let mut buffer: Vec<u8> = Vec::with_capacity(std::mem::size_of::<#name>());
                 #encoded_fields
                 buffer
             }
 
-            fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError> where R: Read {
+            fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError> where R: crate::protocol::traits::ReadMCTypesExt {
                 use byteorder::{ByteOrder, BigEndian};
                 #decoded_fields
             }

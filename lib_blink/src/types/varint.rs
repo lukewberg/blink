@@ -1,10 +1,9 @@
-use std::io::Read;
+use std::io::{Read, Write};
 
 use thiserror::Error;
 
 pub struct VarInt {
-    data: i32,
-    net: [u8; 4],
+    value: i32,
 }
 
 impl VarInt {
@@ -20,32 +19,48 @@ impl VarInt {
     /// let result = VarInt::parse(&buffer);
     /// assert_eq!(result, Ok(-170));
     /// ```
-    pub fn parse<R>(reader: &mut R) -> Result<i32, VarIntError>
+    pub fn decode<R>(reader: &mut R) -> Result<i32, VarIntError>
     where
         R: Read,
     {
-        let mut value = 0u32;
-        let mut shift = 0;
+        let mut value = 0i32;
+        let mut shift: u8 = 0;
         for item in reader.bytes() {
             // Do bit-masking to extract the value bits from the indicator bit, bitwise AND
             if let Ok(byte) = item {
                 let byte_value = (byte & 0b01111111) as u32;
-                value |= byte_value << shift;
+                value |= (byte_value << shift) as i32;
 
                 shift += 7;
-                if shift < 32 && (byte & 0b10000000) == 0 {
+                if (byte & 0b10000000) == 0 {
+                    if shift < 32 && (byte & 0b01000000) != 0 {
+                        return Ok(value | (!0 << shift));
+                    }
                     // MSB is 0, varint terminated
-                    return Ok(value.to_le());
+                    return Ok(value);
                 }
-
-                // if shift >= 70 {
-                //     // Too many bytes, would overflow u32
-                //     return Err(VarIntError::TooLong);
-                // }
             }
             return Err(VarIntError::UnableToRead);
         }
         Err(VarIntError::TooLong)
+    }
+
+    pub fn encode(&mut self) -> Vec<u8> {
+        let mut result: Vec<u8> = Vec::new();
+        loop {
+            // Extract least-significant 7 bits into a byte, leaving the MSb 0
+            let byte: u8 = (self.value & 0b01111111) as u8;
+            // The least-significant 7 bits have been stored in `byte`, so shift the bits of the source number right by 7 (to the front) for processing on the next iteration.
+            self.value >>= 7;
+            // If source number is 0
+            if self.value == 0 && (byte & 0b1000000 == 0)
+                || self.value == -1 && (byte & 0b1000000) != 0
+            {
+                result.push(byte);
+                return result;
+            }
+            result.push(byte | 0b10000000);
+        }
     }
 
     /// Zig-zag encodes an i32 and returns a u32
@@ -69,11 +84,11 @@ impl VarInt {
     }
 }
 
-impl Read for VarInt {
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        todo!()
-    }
-}
+// impl Read for VarInt {
+//     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+//         todo!()
+//     }
+// }
 
 #[derive(Error, Debug)]
 pub enum VarIntError {

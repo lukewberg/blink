@@ -1,6 +1,9 @@
 use std::{io::Read, sync::atomic::AtomicUsize};
 
-use crate::types::{SerdeError, VarInt};
+use crate::{
+    protocol::traits::ReadMCTypesExt,
+    types::{SerdeError, VarInt},
+};
 use flate2::read::ZlibDecoder;
 
 pub const MAX_SIZE: usize = 2097151;
@@ -10,16 +13,16 @@ pub trait NetworkPacket: Sized {
     fn encode(self) -> Vec<u8>;
     fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError>
     where
-        R: Read;
+        R: ReadMCTypesExt;
 
     /// Convert a zlib-compressed raw packet into the target packet type
     fn decompress<R>(reader: &mut R) -> Result<Self, SerdeError>
     where
         R: Read,
     {
-        let packet_length = VarInt::parse(reader)?;
-        let data_length = VarInt::parse(reader)?;
-        let packet_id = VarInt::parse(reader)?;
+        let packet_length = VarInt::decode(reader)?;
+        let data_length = VarInt::decode(reader)?;
+        let packet_id = VarInt::decode(reader)?;
 
         let is_compressed = data_length > 0;
 
@@ -42,4 +45,5 @@ pub trait NetworkPacket: Sized {
 #[repr(C)]
 pub struct JavaPacketHeaderCompressed {
     packet_length: VarInt,
+    test: u32,
 }

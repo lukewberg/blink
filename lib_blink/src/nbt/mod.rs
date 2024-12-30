@@ -6,4 +6,3 @@ mod utils;
 pub use nbt_lexer::*;
 pub use raw::*;
 pub use tags::*;
-pub use utils::*;

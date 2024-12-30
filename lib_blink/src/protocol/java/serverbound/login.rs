@@ -53,13 +53,17 @@ where
     where
         R: Read,
     {
-        use byteorder::{ByteOrder, BigEndian};
+        use byteorder::{BigEndian, ByteOrder};
         let (mut split_buff, buffer) = buffer.split_at(std::mem::size_of::<String>());
         let mut split_buff_vec = split_buff.to_vec();
         split_buff_vec.reverse();
         let server_address = String::from_utf8(split_buff_vec)?;
         let server_port = BigEndian::read_u16(buffer);
         let nest_state = BigEndian::read_u8(buffer);
-        Ok(Self { server_address, server_port, nest_state })
+        Ok(Self {
+            server_address,
+            server_port,
+            nest_state,
+        })
     }
 }

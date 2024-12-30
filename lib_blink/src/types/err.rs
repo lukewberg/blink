@@ -8,4 +8,6 @@ pub enum SerdeError {
     StringFromUtf8(#[from] FromUtf8Error),
     #[error("Failed to parse varint from packet!")]
     VarInt(#[from] VarIntError),
+    #[error("")]
+    Io(#[from] std::io::Error),
 }

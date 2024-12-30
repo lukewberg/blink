@@ -5,7 +5,7 @@ use std::io::BufRead;
 
 use super::{NBTCompound, NBTIoError, NBTList, NBTPrimitive, NBTTag};
 
-pub struct NBTLexer {}
+pub struct NBTLexer();
 
 impl NBTLexer {
     /// Parse an NBT file from a reader.
