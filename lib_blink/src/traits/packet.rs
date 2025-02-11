@@ -20,9 +20,9 @@ pub trait NetworkPacket: Sized {
     where
         R: Read,
     {
-        let packet_length = VarInt::decode(reader)?;
-        let data_length = VarInt::decode(reader)?;
-        let packet_id = VarInt::decode(reader)?;
+        let packet_length = *VarInt::decode(reader)?;
+        let data_length = *VarInt::decode(reader)?;
+        let packet_id = *VarInt::decode(reader)?;
 
         let is_compressed = data_length > 0;
 
@@ -33,7 +33,7 @@ pub trait NetworkPacket: Sized {
         // TODO: Research and extend this function to handle compressed
         let mut decoder = ZlibDecoder::new(reader);
         let mut decoded_buf = Vec::new();
-        decoder.read_to_end(&mut decoded_buf);
+        let _ = decoder.read_to_end(&mut decoded_buf);
         Self::decode(&mut decoded_buf.as_slice())
     }
 

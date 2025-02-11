@@ -1,5 +1,5 @@
 use proc_macro2::Ident;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn;
 use syn::Type;
 
@@ -29,7 +29,8 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                         if let Some(ident) = type_path.path.get_ident() {
                             match &(*(ident.to_string())) {
                                 "String" => {
-                                    todo!();
+                                    // Start by encoding the string length as a VarInt
+                                    ()
                                 }
                                 "VarInt" => {
                                     result = quote! {
@@ -72,36 +73,40 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                             if ident == "String" {
                                 result = quote! {
                                     // Decoding string
-                                    // let (mut split_buff, buffer) = buffer.split_at(std::mem::size_of::<#type_path>());
-                                    // let mut split_buff_vec = split_buff.to_vec();
-                                    // split_buff_vec.reverse();
-                                    // let #field_name = String::from_utf8(split_buff_vec)?;
+                                    // First, parse the length of the string (VarInt)
+                                    let length = VarInt::decode(buffer).expect("Unable to parse string length!");
+                                    // Allocate space
+                                    let mut string_buf: Vec<u8> = vec![0u8; *length as usize];
+                                    buffer
+                                        .read_exact(&mut string_buf)
+                                        .expect("Unable to read string bytes!");
+                                    let #field_name = String::from_utf8(string_buf)?;
                                 };
                             } else {
                                 let read_method = match ident.to_string().as_str() {
                                     "i8" => quote! { read_i8 },
-                                    "i16" => quote! {read_i16},
-                                    "i32" => quote! {read_i32},
-                                    "i64" => quote! {read_i64},
-                                    "i128" => quote! {read_i128},
+                                    "i16" => quote! {read_i16::<byteorder::BigEndian>},
+                                    "i32" => quote! {read_i32::<byteorder::BigEndian>},
+                                    "i64" => quote! {read_i64::<byteorder::BigEndian>},
+                                    "i128" => quote! {read_i128::<byteorder::BigEndian>},
                                     "u8" => quote! {read_u8},
-                                    "u16" => quote! {read_u16},
-                                    "u32" => quote! {read_u32},
-                                    "u64" => quote! {read_u64},
-                                    "u128" => quote! {read_u128},
-                                    "f32" => quote! {read_f32},
-                                    "f64" => quote! {read_f64},
-                                    "usize" => quote! {read_usize},
-                                    "iusize" => quote! {read_iusize},
+                                    "u16" => quote! {read_u16::<byteorder::BigEndian>},
+                                    "u32" => quote! {read_u32::<byteorder::BigEndian>},
+                                    "u64" => quote! {read_u64::<byteorder::BigEndian>},
+                                    "u128" => quote! {read_u128::<byteorder::BigEndian>},
+                                    "f32" => quote! {read_f32::<byteorder::BigEndian>},
+                                    "f64" => quote! {read_f64::<byteorder::BigEndian>},
+                                    "usize" => quote! {read_usize::<byteorder::BigEndian>},
+                                    "iusize" => quote! {read_iusize::<byteorder::BigEndian>},
                                     "VarInt" => quote! {read_varint},
                                     other => panic!("Unsupported primitive! {}", other),
                                 };
                                 result = quote! {
                                     // decoding number primative
-                                    let #field_name = buffer.#read_method::<BigEndian>()?;
+                                    let #field_name = buffer.#read_method()?;
                                 };
                             }
-                            field_names.push(field_name.clone());
+                            field_names.push(field_name);
                         }
                         result
                     }
@@ -120,7 +125,7 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
         _ => panic!("Packet can only be derived for structs with named fields!"),
     };
     let gen = quote! {
-        impl NetworkPacket for #name where #name : Sized {
+        impl crate::traits::NetworkPacket for #name where #name : Sized {
             fn encode(mut self: #name) -> Vec<u8> {
 
                 let mut buffer: Vec<u8> = Vec::with_capacity(std::mem::size_of::<#name>());
@@ -128,8 +133,7 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                 buffer
             }
 
-            fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError> where R: crate::protocol::traits::ReadMCTypesExt {
-                use byteorder::{ByteOrder, BigEndian};
+            fn decode<R>(buffer: &mut R) -> Result<Self, crate::types::SerdeError> where R: crate::protocol::traits::ReadMCTypesExt {
                 #decoded_fields
             }
         }

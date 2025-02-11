@@ -159,7 +159,7 @@ impl NBTLexer {
 
         Ok(NBTTag::TagList(Some(NBTList {
             name: None,
-            length: length as i32,
+            length,
             payload: tag_vec,
         })))
     }

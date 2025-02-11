@@ -1,4 +1,3 @@
-use ahash::AHashMap;
 
 use crate::nbt::NBTTag;
 

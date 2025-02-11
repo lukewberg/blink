@@ -1,9 +1,9 @@
 use std::{marker::PhantomData, net::TcpStream};
 
-pub struct Handshake;
-pub struct Status;
-pub struct Login;
-pub struct Play;
+pub struct Handshake(crate::protocol::java::serverbound::Serverbound);
+pub struct Status();
+pub struct Login();
+pub struct Play();
 
 pub struct Connection<State> {
     stream: TcpStream,

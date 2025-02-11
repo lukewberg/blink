@@ -2,7 +2,7 @@
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::{
     io::{self, Read},
-    mem::{self, ManuallyDrop},
+    mem::{self},
     ptr,
 };
 use thiserror::Error;
@@ -247,9 +247,9 @@ where
             Ok(string) => string,
             Err(_) => return Err(NBTIoError::InvalidCESU8String),
         };
-        return Ok(Some(decoded_str.into()));
+        Ok(Some(decoded_str.into()))
     } else {
-        return Ok(None);
+        Ok(None)
     }
 }
 

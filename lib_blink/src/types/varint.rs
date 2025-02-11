@@ -1,9 +1,9 @@
-use std::io::{Read, Write};
+use std::io::Read;
 
 use thiserror::Error;
 
 pub struct VarInt {
-    value: i32,
+    pub value: i32,
 }
 
 impl VarInt {
@@ -19,7 +19,7 @@ impl VarInt {
     /// let result = VarInt::parse(&buffer);
     /// assert_eq!(result, Ok(-170));
     /// ```
-    pub fn decode<R>(reader: &mut R) -> Result<i32, VarIntError>
+    pub fn decode<R>(reader: &mut R) -> Result<Self, VarIntError>
     where
         R: Read,
     {
@@ -34,11 +34,14 @@ impl VarInt {
                 shift += 7;
                 if (byte & 0b10000000) == 0 {
                     if shift < 32 && (byte & 0b01000000) != 0 {
-                        return Ok(value | (!0 << shift));
+                        return Ok(VarInt {
+                            value: value | (!0 << shift),
+                        });
                     }
                     // MSB is 0, varint terminated
-                    return Ok(value);
+                    return Ok(VarInt { value });
                 }
+                continue;
             }
             return Err(VarIntError::UnableToRead);
         }
@@ -84,11 +87,13 @@ impl VarInt {
     }
 }
 
-// impl Read for VarInt {
-//     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-//         todo!()
-//     }
-// }
+impl std::ops::Deref for VarInt {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
 
 #[derive(Error, Debug)]
 pub enum VarIntError {

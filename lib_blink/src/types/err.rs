@@ -1,4 +1,4 @@
-use std::{error, string::FromUtf8Error};
+use std::string::FromUtf8Error;
 use thiserror::Error;
 
 use super::VarIntError;

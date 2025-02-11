@@ -1,5 +1,4 @@
 mod nbt;
-pub mod packets;
 pub mod protocol;
 #[cfg(test)]
 pub mod tests;
