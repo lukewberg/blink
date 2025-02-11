@@ -3,7 +3,6 @@ use std::io::Read;
 use crate::traits::NetworkPacket;
 use crate::types::SerdeError;
 use blink_macros::JavaPacket;
-use byteorder::{ReadBytesExt};
 
 use crate::{protocol::traits::Identify, types::VarInt};
 

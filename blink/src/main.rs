@@ -1,14 +1,8 @@
-use byteorder::{BigEndian, ReadBytesExt};
 use lib_blink::protocol::java::handler::JavaHandler;
-use lib_blink::protocol::java::serverbound::login::Hello;
-use lib_blink::protocol::java::PacketHeader;
-use lib_blink::traits::NetworkPacket;
-use lib_blink::types::VarInt;
-use socket2::{Domain, Protocol, Socket, Type};
-use std::io::BufReader;
+use socket2::{Domain, Socket, Type};
 use std::{
     io,
-    net::{SocketAddr, TcpListener, TcpStream},
+    net::{SocketAddr, TcpListener},
 };
 
 fn main() -> io::Result<()> {
@@ -21,7 +15,10 @@ fn main() -> io::Result<()> {
     let listener: TcpListener = socket.into();
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) => JavaHandler::handle_client(stream),
+            Ok(stream) => {
+                let handler = JavaHandler::from(stream);
+                handler.handle_client();
+            }
             Err(_) => todo!(),
         }
     }

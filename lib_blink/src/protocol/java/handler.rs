@@ -1,17 +1,19 @@
+use crate::protocol::java::connection::{Connection, ConnectionState};
+use crate::protocol::java::serverbound::login::Hello;
+use crate::protocol::java::PacketHeader;
+use crate::traits::NetworkPacket;
 use std::io::BufReader;
 use std::net::TcpStream;
-use crate::protocol::java::connection::{Connection, ConnectionState};
-use crate::protocol::java::PacketHeader;
-use crate::protocol::java::serverbound::login::Hello;
-use crate::traits::NetworkPacket;
 
 pub struct JavaHandler {
-    connection: ConnectionState,
+    pub connection: Connection,
 }
 
 impl JavaHandler {
-    pub fn handle_client(self, stream: TcpStream) {
-        let mut packet_reader = BufReader::new(stream);
+    pub fn handle_client(self) {
+        // Create BuffReader to read packet data off the wire
+        let mut packet_reader = BufReader::new(self.connection.stream);
+
         // Read the packet header
         let packet_header = PacketHeader::decode(&mut packet_reader).unwrap();
         println!("Packet length: {:?}", *packet_header.length);
@@ -19,6 +21,14 @@ impl JavaHandler {
             //     This is the Hello handshake packet
             let mut hello_packet = Hello::decode(&mut packet_reader).unwrap();
             println!("Received hello packet");
+        }
+    }
+}
+
+impl From<TcpStream> for JavaHandler {
+    fn from(value: TcpStream) -> Self {
+        Self {
+            connection: Connection::new(value),
         }
     }
 }
