@@ -7,6 +7,7 @@ use std::{
 
 fn main() -> io::Result<()> {
     println!("Hello, world!");
+    let mut java_handler = JavaHandler::new();
     let socket = Socket::new(Domain::IPV4, Type::STREAM, None)?;
     let address: SocketAddr = "127.0.0.1:25565".parse().unwrap();
     socket.bind(&address.into())?;
@@ -16,8 +17,7 @@ fn main() -> io::Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                let handler = JavaHandler::from(stream);
-                handler.handle_client();
+                java_handler.handle_client(stream);
             }
             Err(_) => todo!(),
         }

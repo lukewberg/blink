@@ -2,9 +2,8 @@ use crate::types::VarInt;
 use blink_macros::JavaPacket;
 
 pub mod clientbound;
-pub mod connection;
-pub mod serverbound;
 pub mod handler;
+pub mod serverbound;
 
 #[derive(JavaPacket)]
 pub struct PacketHeader {

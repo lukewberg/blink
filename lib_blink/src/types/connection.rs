@@ -13,13 +13,13 @@ pub enum ConnectionState {
 }
 pub struct Connection {
     pub stream: TcpStream,
-    _state: PhantomData<ConnectionState>,
+    pub state: ConnectionState,
 }
 
 impl Connection {
     pub fn new(stream: TcpStream) -> Self {
         Self {
-            _state: PhantomData,
+            state: ConnectionState::Handshake,
             stream,
         }
     }
