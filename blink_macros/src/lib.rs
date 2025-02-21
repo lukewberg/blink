@@ -1,7 +1,7 @@
 use proc_macro2::Ident;
 use quote::quote;
-use syn;
-use syn::Type;
+use syn::{parse_macro_input, Expr, ItemEnum, LitStr, Meta, MetaList, Type};
+use syn::punctuated::Punctuated;
 
 #[proc_macro_derive(BedrockPacket)]
 pub fn packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -74,13 +74,14 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                                 result = quote! {
                                     // Decoding string
                                     // First, parse the length of the string (VarInt)
-                                    let length = VarInt::decode(buffer).expect("Unable to parse string length!");
+                                    // let length = VarInt::decode(buffer).expect("Unable to parse string length!");
                                     // Allocate space
-                                    let mut string_buf: Vec<u8> = vec![0u8; *length as usize];
-                                    buffer
-                                        .read_exact(&mut string_buf)
-                                        .expect("Unable to read string bytes!");
-                                    let #field_name = String::from_utf8(string_buf)?;
+                                    // let mut string_buf: Vec<u8> = vec![0u8; *length as usize];
+                                    // buffer
+                                    //     .read_exact(&mut string_buf)
+                                    //     .expect("Unable to read string bytes!");
+                                    // let #field_name = String::from_utf8(string_buf)?;
+                                    let #field_name = buffer.read_string()?;
                                 };
                             } else {
                                 let read_method = match ident.to_string().as_str() {
@@ -149,4 +150,47 @@ pub fn java_packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::T
 
 fn impl_java_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     impl_bedrock_packet_macro(ast)
+}
+
+
+#[derive(Default)]
+struct ProtocolHandlerArgs {
+    test: Option<LitStr>,
+}
+
+#[proc_macro_attribute]
+pub fn protocol_handler(args: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let mut input = parse_macro_input!(item as ItemEnum);
+    let enum_name = &input.ident;
+    let trait_name = Ident::new(&format!("{}Handler", enum_name.to_string()), enum_name.span());
+
+    // let args = syn::parse_macro_input!(attr with Punctuated::<MetaList, syn::Token![,]>::parse_terminated);
+    let args = syn::parse_macro_input!(args with Punctuated::<MetaList, syn::Token![,]>::parse_terminated);
+    
+
+    let generated_protocol_handlers = &input.variants.iter_mut().map(|variant| {
+        let variant_name = &variant.ident;
+        let variant_value_iterator = &mut variant.fields.iter();
+        let variant_value_in = &variant_value_iterator.next().unwrap().ty;
+        let variant_value_out = &variant_value_iterator.next().unwrap().ty;
+
+        // Snake-case function name in the format of handle_#variant_name
+        let fn_name = Ident::new(&format!("handle_{}", variant_name.to_string().to_lowercase()), enum_name.span());
+
+        quote! {
+            fn #fn_name<T: Sized>(packet: &#variant_value_in, state: &mut T) -> #variant_value_out;
+        }
+    }).collect::<Vec<_>>();
+
+    let expanded = quote! {
+        // Output the original enum
+        #input
+
+        // Generate a trait that can be manually implemented
+        pub trait #trait_name {
+            #(#generated_protocol_handlers)*
+        }
+    };
+
+    proc_macro::TokenStream::from(expanded)
 }

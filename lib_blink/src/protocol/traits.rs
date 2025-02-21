@@ -1,9 +1,12 @@
 use crate::types::{SerdeError, VarInt};
-use std::io::Read;
 use byteorder::ReadBytesExt;
 
-pub trait Identify {
-    fn get_id(&self) -> u8;
+pub trait Identify: Sized {
+    fn get_id(id: u8) -> Self;
+
+    fn id_and_wrap<R>(reader: &mut R) -> Result<Self, SerdeError>
+    where
+        R: ReadMCTypesExt;
 }
 
 // Define custom traits as needed
@@ -24,7 +27,7 @@ where
     fn read_string(&mut self) -> Result<String, SerdeError> {
         // Minecraft strings are UTF-8 with their length prefixed by a VarInt
         let length = *(self.read_varint()?) as usize;
-        let mut buff: Vec<u8> = Vec::with_capacity(length);
+        let mut buff: Vec<u8> = vec![0u8; length];
         self.read_exact(&mut buff)?;
         Ok(String::from_utf8(buff)?)
     }

@@ -1,14 +1,22 @@
 use ahash::AHashMap;
+use flate2::bufread;
 
 use crate::protocol::java::serverbound::login::Hello;
-use crate::protocol::java::PacketHeader;
+use crate::protocol::java::{serverbound, JavaProtocol, JavaProtocolHandler, PacketHeader};
+use crate::protocol::traits::Identify;
 use crate::traits::NetworkPacket;
-use crate::types::JavaClient;
+use crate::types::{ConnectionState, JavaClient};
 use std::io::BufReader;
 use std::net::{SocketAddr, TcpStream};
 
 pub struct JavaHandler {
     pub clients: AHashMap<SocketAddr, JavaClient>,
+}
+
+impl Default for JavaHandler {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl JavaHandler {
@@ -31,16 +39,31 @@ impl JavaHandler {
     }
 
     pub fn handle_client(&mut self, stream: TcpStream) {
-        // Create BuffReader to read packet data off the wire
-
+        /*
+        Depending on the header and if there's already a registered client
+        with a state, start fresh or pick up where it left off
+        */
         let client = self.resolve_client(&stream);
 
+        // Create BuffReader to read packet data off the wire
         let mut packet_reader = BufReader::new(stream);
 
         // Read the packet header
         let packet_header = PacketHeader::decode(&mut packet_reader).unwrap();
-        // Depending on the header and if there's already a registered client
-        // with a state, start fresh or pick up where it left off
+
+        if let Some(state) = &mut client.state {
+            match state {
+                ConnectionState::Handshake => {
+                    let packet =
+                        serverbound::login::Packet::id_and_wrap(&mut packet_reader).unwrap();
+                    JavaProtocol::handle_handshake::<ConnectionState>(&packet, state);
+                }
+                ConnectionState::Status => {}
+                ConnectionState::Login => {}
+                ConnectionState::Play => {}
+                ConnectionState::Configuration => {}
+            }
+        }
 
         println!("Packet length: {:?}", *packet_header.length);
         if packet_header.packet_id == 0 {

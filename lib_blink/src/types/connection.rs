@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, net::TcpStream};
+use std::net::TcpStream;
 
 pub struct Handshake;
 pub struct Status;
@@ -10,6 +10,7 @@ pub enum ConnectionState {
     Status,
     Login,
     Play,
+    Configuration,
 }
 pub struct Connection {
     pub stream: TcpStream,

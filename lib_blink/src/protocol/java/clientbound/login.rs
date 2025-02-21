@@ -1,4 +1,5 @@
-use crate::protocol::traits::Identify;
+use crate::protocol::traits::{Identify, ReadMCTypesExt};
+use crate::types::SerdeError;
 
 pub enum Packet {
     CookieRequest,
@@ -7,17 +8,26 @@ pub enum Packet {
     Hello,
     LoginCompression,
     LoginDisconnect,
+    Unknown,
 }
 
 impl Identify for Packet {
-    fn get_id(&self) -> u8 {
-        match self {
-            Packet::CookieRequest => 5,
-            Packet::CustomQuery => 4,
-            Packet::GameProfile => 2,
-            Packet::Hello => 1,
-            Packet::LoginCompression => 3,
-            Packet::LoginDisconnect => 0,
+    fn get_id(id: u8) -> Self {
+        match id {
+             5 => Packet::CookieRequest,
+             4 => Packet::CustomQuery,
+             2 => Packet::GameProfile,
+             1 => Packet::Hello,
+             3 => Packet::LoginCompression,
+             0 => Packet::LoginDisconnect,
+            _ => Packet::Unknown
         }
+    }
+
+    fn id_and_wrap<R>(reader: &mut R) -> Result<Self, SerdeError>
+    where
+        R: ReadMCTypesExt
+    {
+        todo!()
     }
 }
