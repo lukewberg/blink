@@ -1,7 +1,9 @@
 use proc_macro2::Ident;
+use quote::__private::ext::RepToTokensExt;
 use quote::quote;
-use syn::{parse_macro_input, Expr, ItemEnum, LitStr, Meta, MetaList, Type};
 use syn::punctuated::Punctuated;
+use syn::token::Comma;
+use syn::{parse_macro_input, Expr, ItemEnum, LitStr, Meta, MetaList, Type};
 
 #[proc_macro_derive(BedrockPacket)]
 pub fn packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -29,12 +31,13 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                         if let Some(ident) = type_path.path.get_ident() {
                             match &(*(ident.to_string())) {
                                 "String" => {
-                                    // Start by encoding the string length as a VarInt
-                                    ()
+                                    result = quote! {
+                                        buffer.write_string(self.#field_name)?;
+                                    }
                                 }
                                 "VarInt" => {
                                     result = quote! {
-                                        buffer.append(&mut self.#field_name.encode());
+                                        buffer.write_varint(&mut self.#field_name)?;
                                     }
                                 }
                                 "i8" | "i16" | "i32" | "i64" | "i128" | "u8" | "u16" | "u32"
@@ -127,11 +130,11 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
     };
     let gen = quote! {
         impl crate::traits::NetworkPacket for #name where #name : Sized {
-            fn encode(mut self: #name) -> Vec<u8> {
+            fn encode(mut self: #name) -> Result<Vec<u8>, crate::types::SerdeError> {
 
-                let mut buffer: Vec<u8> = Vec::with_capacity(std::mem::size_of::<#name>());
+                let mut buffer: Vec<u8> = vec![0u8; std::mem::size_of::<#name>()];
                 #encoded_fields
-                buffer
+                Ok(buffer)
             }
 
             fn decode<R>(buffer: &mut R) -> Result<Self, crate::types::SerdeError> where R: crate::protocol::traits::ReadMCTypesExt {
@@ -152,34 +155,42 @@ fn impl_java_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     impl_bedrock_packet_macro(ast)
 }
 
-
 #[derive(Default)]
 struct ProtocolHandlerArgs {
     test: Option<LitStr>,
 }
 
 #[proc_macro_attribute]
-pub fn protocol_handler(args: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let mut input = parse_macro_input!(item as ItemEnum);
+pub fn protocol_handler(
+    args: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    // Parse input as an enum
+    let input = parse_macro_input!(item as ItemEnum);
     let enum_name = &input.ident;
-    let trait_name = Ident::new(&format!("{}Handler", enum_name.to_string()), enum_name.span());
+    let trait_name = Ident::new(&format!("{}Handler", enum_name), enum_name.span());
 
-    // let args = syn::parse_macro_input!(attr with Punctuated::<MetaList, syn::Token![,]>::parse_terminated);
-    let args = syn::parse_macro_input!(args with Punctuated::<MetaList, syn::Token![,]>::parse_terminated);
-    
-
-    let generated_protocol_handlers = &input.variants.iter_mut().map(|variant| {
+    // Parse optional arguments (if necessary)
+    // let _args = parse_macro_input!(args with Punctuated::<MetaList, Comma>::parse_terminated);
+    let arg_ident = parse_macro_input!(args as Ident);
+    // Generate trait methods
+    let generated_protocol_handlers = input.variants.iter().filter_map(|variant| {
         let variant_name = &variant.ident;
-        let variant_value_iterator = &mut variant.fields.iter();
-        let variant_value_in = &variant_value_iterator.next().unwrap().ty;
-        let variant_value_out = &variant_value_iterator.next().unwrap().ty;
 
-        // Snake-case function name in the format of handle_#variant_name
+        // Ensure the variant has exactly two fields
+        let mut fields_iter = variant.fields.iter();
+        let variant_value_in = fields_iter.next()?;
+        let variant_value_out = fields_iter.next()?;
+
+        if fields_iter.next().is_some() {
+            return None; // Skip variants that don't have exactly two fields
+        }
+
         let fn_name = Ident::new(&format!("handle_{}", variant_name.to_string().to_lowercase()), enum_name.span());
 
-        quote! {
-            fn #fn_name<T: Sized>(packet: &#variant_value_in, state: &mut T) -> #variant_value_out;
-        }
+        Some(quote! {
+            fn #fn_name(packet: &#variant_value_in, client: &mut #arg_ident) -> #variant_value_out;
+        })
     }).collect::<Vec<_>>();
 
     let expanded = quote! {

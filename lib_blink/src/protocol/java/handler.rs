@@ -49,27 +49,31 @@ impl JavaHandler {
         let mut packet_reader = BufReader::new(stream);
 
         // Read the packet header
-        let packet_header = PacketHeader::decode(&mut packet_reader).unwrap();
+        // let packet_header = PacketHeader::decode(&mut packet_reader).unwrap();
 
         if let Some(state) = &mut client.state {
             match state {
                 ConnectionState::Handshake => {
                     let packet =
                         serverbound::login::Packet::id_and_wrap(&mut packet_reader).unwrap();
-                    JavaProtocol::handle_handshake::<ConnectionState>(&packet, state);
+                    JavaProtocol::handle_handshake(&packet, client);
                 }
-                ConnectionState::Status => {}
+                ConnectionState::Status => {
+                    let packet =
+                        serverbound::status::Packet::id_and_wrap(&mut packet_reader).unwrap();
+                    JavaProtocol::handle_status(&packet, client);
+                }
                 ConnectionState::Login => {}
+                ConnectionState::Transfer => {}
                 ConnectionState::Play => {}
                 ConnectionState::Configuration => {}
             }
         }
 
-        println!("Packet length: {:?}", *packet_header.length);
-        if packet_header.packet_id == 0 {
-            //     This is the Hello handshake packet
-            let mut hello_packet = Hello::decode(&mut packet_reader).unwrap();
-            println!("Received hello packet");
-        }
+        // println!("Packet length: {:?}", *packet_header.length);
+        // if packet_header.packet_id == 0 {
+        //     //     This is the Hello handshake packet
+        //     println!("Received hello packet");
+        // }
     }
 }

@@ -95,6 +95,12 @@ impl std::ops::Deref for VarInt {
     }
 }
 
+impl From<i32> for VarInt {
+    fn from(value: i32) -> Self {
+        Self { value }
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum VarIntError {
     #[error("Varint too long!")]

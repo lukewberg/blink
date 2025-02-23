@@ -1,5 +1,6 @@
 use blink_macros::JavaPacket;
 
+use crate::protocol::traits::WriteMCTypesExt;
 use crate::types::SerdeError;
 use crate::{
     protocol::{java::PacketHeader, traits::Identify},
@@ -56,8 +57,8 @@ impl Identify for Packet {
 
 #[derive(JavaPacket)]
 pub struct Hello {
-    protocol_version: VarInt,
-    server_address: String,
-    server_port: u16,
-    next_state: VarInt,
+    pub protocol_version: VarInt,
+    pub server_address: String,
+    pub server_port: u16,
+    pub next_state: VarInt,
 }

@@ -10,7 +10,7 @@ pub const MAX_SIZE: usize = 2097151;
 pub static COMPRESSION_THRESHOLD: AtomicUsize = AtomicUsize::new(0);
 
 pub trait NetworkPacket: Sized {
-    fn encode(self) -> Vec<u8>;
+    fn encode(self) -> Result<Vec<u8>, SerdeError>;
     fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError>
     where
         R: ReadMCTypesExt;

@@ -1,5 +1,8 @@
+use std::io::Write;
+
 use crate::types::{SerdeError, VarInt};
-use byteorder::ReadBytesExt;
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+use zerocopy::IntoBytes;
 
 pub trait Identify: Sized {
     fn get_id(id: u8) -> Self;
@@ -15,6 +18,11 @@ pub trait ReadMCTypesExt: ReadBytesExt {
     fn read_string(&mut self) -> Result<String, SerdeError>;
 }
 
+pub trait WriteMCTypesExt: WriteBytesExt {
+    fn write_varint(&mut self, value: &mut VarInt) -> Result<(), SerdeError>;
+    fn write_string(&mut self, value: String) -> Result<(), SerdeError>;
+}
+
 // Implement the trait for any type that implements ReadBytesExt
 impl<T> ReadMCTypesExt for T
 where
@@ -26,9 +34,30 @@ where
 
     fn read_string(&mut self) -> Result<String, SerdeError> {
         // Minecraft strings are UTF-8 with their length prefixed by a VarInt
+        // And I guess they're not in network order..?
         let length = *(self.read_varint()?) as usize;
         let mut buff: Vec<u8> = vec![0u8; length];
         self.read_exact(&mut buff)?;
         Ok(String::from_utf8(buff)?)
+    }
+}
+
+impl<T> WriteMCTypesExt for T
+where
+    T: byteorder::WriteBytesExt,
+{
+    fn write_varint(&mut self, value: &mut VarInt) -> Result<(), SerdeError> {
+        let _ = self.write(value.encode().as_bytes())?;
+        Ok(())
+    }
+
+    fn write_string(&mut self, value: String) -> Result<(), SerdeError> {
+        // Minecraft strings are UTF-8 with their length prefixed by a VarInt
+        // And I guess they're not in network order..?
+        let mut length = VarInt::from(value.len() as i32);
+        let encoded_length = length.encode();
+        self.write(encoded_length.as_bytes())?;
+        self.write_all(value.as_bytes())?;
+        Ok(())
     }
 }
