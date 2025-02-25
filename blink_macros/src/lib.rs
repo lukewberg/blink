@@ -1,9 +1,6 @@
 use proc_macro2::Ident;
-use quote::__private::ext::RepToTokensExt;
 use quote::quote;
-use syn::punctuated::Punctuated;
-use syn::token::Comma;
-use syn::{parse_macro_input, Expr, ItemEnum, LitStr, Meta, MetaList, Type};
+use syn::{parse_macro_input, ItemEnum, LitStr, Type};
 
 #[proc_macro_derive(BedrockPacket)]
 pub fn packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

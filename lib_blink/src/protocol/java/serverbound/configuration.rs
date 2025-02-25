@@ -34,6 +34,7 @@ impl Identify for Packet {
     {
         todo!()
     }
+    
     // fn get_id(&self) -> u8 {
     //     match self {
     //         Packet::ClientInformation => 0,

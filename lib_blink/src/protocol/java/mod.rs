@@ -32,7 +32,11 @@ impl JavaProtocolHandler for JavaProtocol {
         client: &mut JavaClient,
     ) -> clientbound::status::Packet {
         match packet {
-            serverbound::status::Packet::PingRequest => todo!(),
+            serverbound::status::Packet::PingRequest(Some(data)) => {
+                clientbound::status::Packet::PongResponse(Some(clientbound::status::PongResponse {
+                    timestamp: data.timestamp,
+                }))
+            }
             serverbound::status::Packet::StatusRequest => {
                 let mut response = clientbound::status::StatusResponse {
                     json_response: String::from(
@@ -63,6 +67,7 @@ impl JavaProtocolHandler for JavaProtocol {
                 clientbound::status::Packet::StatusResponse(Some(response))
             }
             serverbound::status::Packet::Unknown => todo!(),
+            _ => todo!(),
         }
     }
 

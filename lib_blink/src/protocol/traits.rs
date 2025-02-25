@@ -10,6 +10,10 @@ pub trait Identify: Sized {
     fn id_and_wrap<R>(reader: &mut R) -> Result<Self, SerdeError>
     where
         R: ReadMCTypesExt;
+
+    fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
+        None
+    }
 }
 
 // Define custom traits as needed
@@ -56,7 +60,7 @@ where
         // And I guess they're not in network order..?
         let mut length = VarInt::from(value.len() as i32);
         let encoded_length = length.encode();
-        self.write(encoded_length.as_bytes())?;
+        self.write_all(encoded_length.as_bytes())?;
         self.write_all(value.as_bytes())?;
         Ok(())
     }

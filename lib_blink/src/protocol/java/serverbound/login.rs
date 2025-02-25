@@ -44,6 +44,13 @@ impl Identify for Packet {
         }
     }
 
+    fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
+        match self {
+            Packet::Hello(Some(packet)) => Some(packet.encode().unwrap()),
+            _ => None,
+        }
+    }
+
     // fn get_id(&self) -> u8 {
     //     match self {
     //         Packet::CookieResponse => 4,
