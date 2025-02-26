@@ -25,7 +25,9 @@ impl JavaHandler {
     pub fn resolve_client(&mut self, stream: &TcpStream) -> &mut JavaClient {
         let contains_client = self.clients.contains_key(&stream.peer_addr().unwrap().ip());
         if contains_client {
-            self.clients.get_mut(&stream.peer_addr().unwrap().ip()).unwrap()
+            self.clients
+                .get_mut(&stream.peer_addr().unwrap().ip())
+                .unwrap()
         } else {
             // New client, insert and return mut ref
             let peer_address = stream.peer_addr().unwrap().ip();
@@ -68,6 +70,7 @@ impl JavaHandler {
             };
             if let Some(response_packet) = response_packet {
                 stream.write_all(response_packet.as_slice()).unwrap();
+                stream.flush().unwrap();
             } else {
                 println!("No response packet");
             }

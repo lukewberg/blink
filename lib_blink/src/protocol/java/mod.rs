@@ -2,6 +2,7 @@ use crate::protocol::java::serverbound::configuration::Packet;
 use crate::protocol::traits::WriteMCTypesExt;
 use crate::types::{JavaClient, VarInt};
 use blink_macros::{protocol_handler, JavaPacket};
+use std::io::Write;
 
 pub mod clientbound;
 pub mod handler;
@@ -37,27 +38,19 @@ impl JavaProtocolHandler for JavaProtocol {
                     timestamp: data.timestamp,
                 }))
             }
+
             serverbound::status::Packet::StatusRequest => {
-                let mut response = clientbound::status::StatusResponse {
+                let response = clientbound::status::StatusResponse {
                     json_response: String::from(
                         r#"
                         {
                         "version": {
-                                "name": "Luke's rust dev server",
+                                "name": "Lukes rust dev server",
                                 "protocol": 769
                             },
                             "players": {
                                 "max": 100,
-                                "online": 5,
-                                "sample": [
-                                    {
-                                        "name": "thinkofdeath",
-                                        "id": "4566e69f-c907-48ee-8d71-d7ba5aa00d20"
-                                    }
-                                ]
-                            },
-                            "description": {
-                                "text": "Hello, world!"
+                                "online": 0,
                             },
                             "enforcesSecureChat": false
                         }
@@ -66,22 +59,31 @@ impl JavaProtocolHandler for JavaProtocol {
                 };
                 clientbound::status::Packet::StatusResponse(Some(response))
             }
+            serverbound::status::Packet::LegacyPing(Some(data)) => {
+                let mut response = clientbound::status::LegacyPong {
+                    packet_id: 255,
+                    str_len: 0,
+                    payload: String::from("§1\0127\01.21.4\0A Minecraft Server (Rust)\010\020"),
+                };
+                response.str_len = response.payload.chars().count() as u16;
+                clientbound::status::Packet::LegacyPong(Some(response))
+            }
             serverbound::status::Packet::Unknown => todo!(),
             _ => todo!(),
         }
-    }
-
-    fn handle_configuration(
-        packet: &Packet,
-        client: &mut JavaClient,
-    ) -> clientbound::configuration::Packet {
-        todo!()
     }
 
     fn handle_login(
         packet: &serverbound::login::Packet,
         client: &mut JavaClient,
     ) -> clientbound::login::Packet {
+        todo!()
+    }
+
+    fn handle_configuration(
+        packet: &Packet,
+        client: &mut JavaClient,
+    ) -> clientbound::configuration::Packet {
         todo!()
     }
 
@@ -97,4 +99,10 @@ impl JavaProtocolHandler for JavaProtocol {
 pub struct PacketHeader {
     pub length: VarInt,
     pub packet_id: u8,
+}
+
+#[derive(JavaPacket)]
+pub struct LegacyPacketHeader {
+    pub packet_id: u8,
+    pub payload: u8,
 }

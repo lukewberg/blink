@@ -1,3 +1,4 @@
+use std::io::Write;
 use blink_macros::JavaPacket;
 
 use crate::protocol::traits::WriteMCTypesExt;
@@ -46,7 +47,7 @@ impl Identify for Packet {
 
     fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
         match self {
-            Packet::Hello(Some(packet)) => Some(packet.encode().unwrap()),
+            Packet::Hello(Some(packet)) => Some(packet.encode(0).unwrap()),
             _ => None,
         }
     }

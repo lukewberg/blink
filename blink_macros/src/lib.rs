@@ -127,11 +127,17 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
     };
     let gen = quote! {
         impl crate::traits::NetworkPacket for #name where #name : Sized {
-            fn encode(mut self: #name) -> Result<Vec<u8>, crate::types::SerdeError> {
+            fn encode(mut self: #name, packet_id: u8) -> Result<Vec<u8>, crate::types::SerdeError> {
 
                 let mut buffer: Vec<u8> = vec![0u8; std::mem::size_of::<#name>()];
                 #encoded_fields
-                Ok(buffer)
+                let packet_id = crate::types::VarInt { value: packet_id as i32 }.encode();
+                let buffer_len_varint = crate::types::VarInt { value: (buffer.len() + packet_id.len()) as i32 }.encode();
+                let mut result_buffer = vec![0u8; buffer.len() + packet_id.len() + buffer_len_varint.len()];
+                result_buffer.write_all(buffer_len_varint.as_slice())?;
+                result_buffer.write_all(packet_id.as_slice())?;
+                result_buffer.write_all(buffer.as_slice())?;
+                Ok(result_buffer)
             }
 
             fn decode<R>(buffer: &mut R) -> Result<Self, crate::types::SerdeError> where R: crate::protocol::traits::ReadMCTypesExt {
