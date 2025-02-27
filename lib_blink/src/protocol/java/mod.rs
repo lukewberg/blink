@@ -63,9 +63,10 @@ impl JavaProtocolHandler for JavaProtocol {
                 let mut response = clientbound::status::LegacyPong {
                     packet_id: 255,
                     str_len: 0,
-                    payload: String::from("§1\0127\01.21.4\0A Minecraft Server (Rust)\010\020"),
+                    // payload: String::from("§1\x0047\x001.15.0\x00A Minecraft Server\x000\x0020"),
+                    payload: format!("§1\0{}\0{}\0{}\0{}\0{}", 47, "1.15.0", "A Minecraft Server", 0, 20),
                 };
-                response.str_len = response.payload.chars().count() as u16;
+                response.str_len = (response.payload.chars().count() - 1) as u16;
                 clientbound::status::Packet::LegacyPong(Some(response))
             }
             serverbound::status::Packet::Unknown => todo!(),

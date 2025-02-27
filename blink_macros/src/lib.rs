@@ -15,6 +15,48 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
         _ => panic!("Packet can only be derived for structs"),
     };
 
+    let field_sizes = match fields {
+        syn::Fields::Named(named_fields) => {
+            let result = named_fields.named.iter().map(|field| {
+            let field_name = field.ident.clone().unwrap();
+            let field_type = field.ty.clone();
+            match field_type {
+                syn::Type::Array(_) => panic!(),
+                syn::Type::Path(type_path) => {
+                    let mut result = quote! {};
+                    if let Some(ident) = type_path.path.get_ident() {
+                        match &(*(ident.to_string())) {
+                            "String" => {
+                                result = quote! {
+                                    packet_length = packet_length + VarInt::expected_size(self.#field_name.len() as i32) + self.#field_name.len();
+                                }
+                            }
+                            "VarInt" => {
+                                result = quote! {
+                                    packet_length = packet_length + VarInt::expected_size(self.#field_name.value);
+                                }
+                            }
+                            "i8" | "i16" | "i32" | "i64" | "i128" | "u8" | "u16" | "u32"
+                            | "u64" | "u128" | "f32" | "f64" | "usize" | "iusize" => {
+                                result = quote! {
+                                    packet_length = packet_length + std::mem::size_of_val(&self.#field_name);
+                                }
+                            }
+                            _ => (),
+                        }
+                    }
+                    result
+                }
+                _ => panic!(),
+            }
+        });
+            quote! {
+                #(#result)*
+            }
+        }
+        _ => panic!("Packet can only be derived for structs with named fields!"),
+    };
+
     let encoded_fields = match fields {
         syn::Fields::Named(named_fields) => {
             let field_encoders = named_fields.named.iter().map(|field| {
@@ -128,16 +170,15 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
     let gen = quote! {
         impl crate::traits::NetworkPacket for #name where #name : Sized {
             fn encode(mut self: #name, packet_id: u8) -> Result<Vec<u8>, crate::types::SerdeError> {
-
-                let mut buffer: Vec<u8> = vec![0u8; std::mem::size_of::<#name>()];
-                #encoded_fields
                 let packet_id = crate::types::VarInt { value: packet_id as i32 }.encode();
-                let buffer_len_varint = crate::types::VarInt { value: (buffer.len() + packet_id.len()) as i32 }.encode();
-                let mut result_buffer = vec![0u8; buffer.len() + packet_id.len() + buffer_len_varint.len()];
-                result_buffer.write_all(buffer_len_varint.as_slice())?;
-                result_buffer.write_all(packet_id.as_slice())?;
-                result_buffer.write_all(buffer.as_slice())?;
-                Ok(result_buffer)
+                let mut packet_length: usize = packet_id.len();
+                #field_sizes
+                packet_length = packet_length + crate::types::VarInt::expected_size(packet_length as i32);
+                let mut buffer: Vec<u8> = Vec::with_capacity(packet_length);
+                buffer.write_all((crate::types::VarInt { value: packet_length as i32 }.encode()).as_slice())?;
+                buffer.write_all(packet_id.as_slice())?;
+                #encoded_fields
+                Ok(buffer)
             }
 
             fn decode<R>(buffer: &mut R) -> Result<Self, crate::types::SerdeError> where R: crate::protocol::traits::ReadMCTypesExt {

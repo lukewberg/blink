@@ -1,10 +1,10 @@
-use std::io::Write;
-use byteorder::WriteBytesExt;
 use blink_macros::JavaPacket;
-
+use byteorder::WriteBytesExt;
+use std::io::Write;
+use zerocopy::IntoBytes;
 use crate::protocol::traits::{Identify, ReadMCTypesExt, WriteMCTypesExt};
 use crate::traits::NetworkPacket;
-use crate::types::SerdeError;
+use crate::types::{SerdeError, VarInt};
 
 pub enum Packet {
     PongResponse(Option<PongResponse>),
@@ -59,8 +59,11 @@ impl NetworkPacket for LegacyPong {
     fn encode(self, packet_id: u8) -> Result<Vec<u8>, SerdeError> {
         let mut buf = Vec::new();
         buf.write_u8(self.packet_id)?;
-        buf.write_u16::<byteorder::NetworkEndian>(self.str_len)?;
-        buf.write_all(&self.payload.as_bytes())?;
+        buf.write_u16::<byteorder::BigEndian>(self.str_len)?;
+        let resp_str = self.payload.encode_utf16().collect::<Vec<u16>>().iter().map(|n| u16::from_be_bytes([(n & 0xFF) as u8, (n >> 8) as u8])).collect::<Vec<u16>>();
+        unsafe {
+            buf.append(&mut resp_str.align_to::<u8>().1.to_vec());
+        }
         Ok(buf)
     }
 

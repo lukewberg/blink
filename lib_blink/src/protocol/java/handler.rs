@@ -3,7 +3,7 @@ use crate::protocol::traits::Identify;
 use crate::types::{ConnectionState, JavaClient};
 use ahash::AHashMap;
 use std::io::Write;
-use std::net::{IpAddr, TcpStream};
+use std::net::{IpAddr, Shutdown, TcpStream};
 
 pub struct JavaHandler {
     pub clients: AHashMap<IpAddr, JavaClient>,
@@ -69,8 +69,9 @@ impl JavaHandler {
                 ConnectionState::Configuration => None,
             };
             if let Some(response_packet) = response_packet {
-                stream.write_all(response_packet.as_slice()).unwrap();
-                stream.flush().unwrap();
+                let response_packet_slice = response_packet.as_slice();
+                stream.write_all(response_packet_slice).unwrap();
+                // stream.shutdown(Shutdown::Both).unwrap();
             } else {
                 println!("No response packet");
             }
