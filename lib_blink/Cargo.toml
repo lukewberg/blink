@@ -12,3 +12,5 @@ flate2.workspace = true
 num.workspace = true
 thiserror.workspace = true
 zerocopy.workspace = true
+serde = { version = "1.0.218", features = ["derive"] }
+serde_json.workspace = true

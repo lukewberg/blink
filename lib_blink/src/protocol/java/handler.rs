@@ -48,34 +48,37 @@ impl JavaHandler {
 
         // Read the packet header
         // let packet_header = PacketHeader::decode(&mut packet_reader).unwrap();
-
-        if let Some(state) = &mut client.state {
-            let response_packet: Option<Vec<u8>> = match state {
-                ConnectionState::Handshake => {
-                    let packet = serverbound::login::Packet::id_and_wrap(&mut stream).unwrap();
-                    JavaProtocol::handle_handshake(&packet, client);
-                    None
+        loop {
+            if let Some(state) = &mut client.state {
+                let response_packet: Option<Vec<u8>> = match state {
+                    ConnectionState::Handshake => {
+                        let packet = serverbound::login::Packet::id_and_wrap(&mut stream).unwrap();
+                        JavaProtocol::handle_handshake(&packet, client);
+                        continue;
+                    }
+                    ConnectionState::Status => {
+                        let packet = serverbound::status::Packet::id_and_wrap(&mut stream).unwrap();
+                        let response = JavaProtocol::handle_status(&packet, client)
+                            .get_wrapped_as_bytes()
+                            .unwrap();
+                        Some(response)
+                    }
+                    ConnectionState::Login => None,
+                    ConnectionState::Transfer => None,
+                    ConnectionState::Play => None,
+                    ConnectionState::Configuration => None,
+                };
+                if let Some(response_packet) = response_packet {
+                    let response_packet_slice = response_packet.as_slice();
+                    stream.write_all(response_packet_slice).unwrap();
+                } else {
+                    println!("No response packet");
+                    stream.shutdown(Shutdown::Both).unwrap();
+                    return;
                 }
-                ConnectionState::Status => {
-                    let packet = serverbound::status::Packet::id_and_wrap(&mut stream).unwrap();
-                    let response = JavaProtocol::handle_status(&packet, client)
-                        .get_wrapped_as_bytes()
-                        .unwrap();
-                    Some(response)
-                }
-                ConnectionState::Login => None,
-                ConnectionState::Transfer => None,
-                ConnectionState::Play => None,
-                ConnectionState::Configuration => None,
-            };
-            if let Some(response_packet) = response_packet {
-                let response_packet_slice = response_packet.as_slice();
-                stream.write_all(response_packet_slice).unwrap();
-                // stream.shutdown(Shutdown::Both).unwrap();
-            } else {
-                println!("No response packet");
             }
         }
+
 
         // println!("Packet length: {:?}", *packet_header.length);
         // if packet_header.packet_id == 0 {

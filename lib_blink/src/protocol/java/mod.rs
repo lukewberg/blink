@@ -1,3 +1,4 @@
+use crate::protocol::java::clientbound::status::{Description, Players, StatusResponseJSON, Version};
 use crate::protocol::java::serverbound::configuration::Packet;
 use crate::protocol::traits::WriteMCTypesExt;
 use crate::types::{JavaClient, VarInt};
@@ -40,22 +41,25 @@ impl JavaProtocolHandler for JavaProtocol {
             }
 
             serverbound::status::Packet::StatusRequest => {
+                let json_response = StatusResponseJSON {
+                    version: Version {
+                        name: "1.21.4".into(),
+                        protocol: 769,
+                    },
+                    players: Players {
+                        max: 20,
+                        online: 0,
+                        sample: vec![],
+                    },
+                    description: Description {
+                        text: "Lukes rust dev server".into(),
+                    },
+                    favicon: None,
+                    enforces_secure_chat: false,
+                    previews_chat: false,
+                };
                 let response = clientbound::status::StatusResponse {
-                    json_response: String::from(
-                        r#"
-                        {
-                        "version": {
-                                "name": "Lukes rust dev server",
-                                "protocol": 769
-                            },
-                            "players": {
-                                "max": 100,
-                                "online": 0,
-                            },
-                            "enforcesSecureChat": false
-                        }
-                        "#,
-                    ),
+                    json_response: serde_json::to_string(&json_response).unwrap(),
                 };
                 clientbound::status::Packet::StatusResponse(Some(response))
             }
@@ -64,7 +68,10 @@ impl JavaProtocolHandler for JavaProtocol {
                     packet_id: 255,
                     str_len: 0,
                     // payload: String::from("§1\x0047\x001.15.0\x00A Minecraft Server\x000\x0020"),
-                    payload: format!("§1\0{}\0{}\0{}\0{}\0{}", 47, "1.15.0", "A Minecraft Server", 0, 20),
+                    payload: format!(
+                        "§1\0{}\0{}\0{}\0{}\0{}",
+                        47, "1.15.0", "Luke's Minecraft Server (rust)", 0, 20
+                    ),
                 };
                 response.str_len = (response.payload.chars().count() - 1) as u16;
                 clientbound::status::Packet::LegacyPong(Some(response))
