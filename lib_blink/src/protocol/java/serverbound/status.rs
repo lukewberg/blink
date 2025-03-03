@@ -6,6 +6,7 @@ use crate::traits::NetworkPacket;
 use crate::types::SerdeError;
 use blink_macros::JavaPacket;
 
+#[derive(Debug)]
 pub enum Packet {
     PingRequest(Option<PingRequest>),
     StatusRequest,
@@ -29,16 +30,17 @@ impl Identify for Packet {
     {
         // Client sends the legacy ping, annoying... Gotta peek the byte to see if the packet id is
         let mut buf_reader = BufReader::new(reader);
-        // let peeked_bytes = buf_reader.fill_buf()?;
+        let peeked_bytes = buf_reader.fill_buf()?;
 
         let packet_id: u8;
 
-        // if !peeked_bytes.is_empty() && peeked_bytes[0] == 254 {
-        //     packet_id = 254;
-        // } else {
-        //     packet_id = PacketHeader::decode(&mut buf_reader)?.packet_id;
-        // }
-        packet_id = PacketHeader::decode(&mut buf_reader)?.packet_id;
+        if !peeked_bytes.is_empty() && peeked_bytes[0] == 254 {
+            packet_id = 254;
+        } else {
+            packet_id = PacketHeader::decode(&mut buf_reader)?.packet_id;
+        }
+        // packet_id = PacketHeader::decode(&mut buf_reader)?.packet_id;
+        println!("Received packet: {:?}", Self::get_id(packet_id));
         match Self::get_id(packet_id) {
             Packet::PingRequest(_) => Ok(Self::PingRequest(Some(PingRequest::decode(
                 &mut buf_reader,
@@ -64,11 +66,13 @@ impl Identify for Packet {
     }
 }
 
+#[derive(Debug)]
 #[derive(JavaPacket)]
 pub struct PingRequest {
     pub timestamp: i64,
 }
 
+#[derive(Debug)]
 #[derive(JavaPacket)]
 pub struct LegacyPing {
     pub packet_id: u8,

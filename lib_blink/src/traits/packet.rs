@@ -1,5 +1,5 @@
 use std::{io::Read, sync::atomic::AtomicUsize};
-
+use std::net::TcpStream;
 use crate::{
     protocol::traits::ReadMCTypesExt,
     types::{SerdeError, VarInt},
@@ -10,7 +10,7 @@ pub const MAX_SIZE: usize = 2097151;
 pub static COMPRESSION_THRESHOLD: AtomicUsize = AtomicUsize::new(0);
 
 pub trait NetworkPacket: Sized {
-    fn encode(self, packet_id: u8) -> Result<Vec<u8>, SerdeError>;
+    fn encode(self, stream: &mut TcpStream, packet_id: u8) -> Result<(), SerdeError>;
     fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError>
     where
         R: ReadMCTypesExt;

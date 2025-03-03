@@ -1,6 +1,6 @@
 use crate::protocol::java::{serverbound, JavaProtocol, JavaProtocolHandler};
 use crate::protocol::traits::Identify;
-use crate::types::{ConnectionState, JavaClient};
+use crate::types::{ConnectionState, HandlerError, JavaClient, SerdeError};
 use ahash::AHashMap;
 use std::io::Write;
 use std::net::{IpAddr, Shutdown, TcpStream};
@@ -36,7 +36,7 @@ impl JavaHandler {
         }
     }
 
-    pub fn handle_client(&mut self, mut stream: TcpStream) {
+    pub fn handle_client(&mut self, mut stream: TcpStream) -> Result<(), HandlerError> {
         /*
         Depending on the header and if there's already a registered client
         with a state, start fresh or pick up where it left off
@@ -50,32 +50,30 @@ impl JavaHandler {
         // let packet_header = PacketHeader::decode(&mut packet_reader).unwrap();
         loop {
             if let Some(state) = &mut client.state {
-                let response_packet: Option<Vec<u8>> = match state {
+                match state {
                     ConnectionState::Handshake => {
-                        let packet = serverbound::login::Packet::id_and_wrap(&mut stream).unwrap();
-                        JavaProtocol::handle_handshake(&packet, client);
+                        let packet = serverbound::login::Packet::id_and_wrap(&mut stream)?;
+                        JavaProtocol::handle_handshake(&packet, &mut stream, client);
                         continue;
                     }
                     ConnectionState::Status => {
-                        let packet = serverbound::status::Packet::id_and_wrap(&mut stream).unwrap();
-                        let response = JavaProtocol::handle_status(&packet, client)
-                            .get_wrapped_as_bytes()
-                            .unwrap();
-                        Some(response)
+                        let packet = serverbound::status::Packet::id_and_wrap(&mut stream)?;
+                        JavaProtocol::handle_status(&packet, &mut stream, client);
                     }
-                    ConnectionState::Login => None,
-                    ConnectionState::Transfer => None,
-                    ConnectionState::Play => None,
-                    ConnectionState::Configuration => None,
+                    ConnectionState::Login => (),
+                    ConnectionState::Transfer => (),
+                    ConnectionState::Play => (),
+                    ConnectionState::Configuration => (),
                 };
-                if let Some(response_packet) = response_packet {
-                    let response_packet_slice = response_packet.as_slice();
-                    stream.write_all(response_packet_slice).unwrap();
-                } else {
-                    println!("No response packet");
-                    stream.shutdown(Shutdown::Both).unwrap();
-                    return;
-                }
+                // if let Some(response_packet) = response_packet {
+                //     let response_packet_slice = response_packet.as_slice();
+                //     stream.write_all(response_packet_slice)?;
+                //     println!("Wrote response packet");
+                // } else {
+                //     println!("No response packet");
+                //     stream.shutdown(Shutdown::Both)?;
+                //     return Ok(()); // End the connection
+                // }
             }
         }
 

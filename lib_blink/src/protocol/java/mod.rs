@@ -1,9 +1,12 @@
-use crate::protocol::java::clientbound::status::{Description, Players, StatusResponseJSON, Version};
+use crate::protocol::java::clientbound::status::{
+    Description, Players, StatusResponseJSON, Version,
+};
 use crate::protocol::java::serverbound::configuration::Packet;
 use crate::protocol::traits::WriteMCTypesExt;
 use crate::types::{JavaClient, VarInt};
 use blink_macros::{protocol_handler, JavaPacket};
 use std::io::Write;
+use std::net::TcpStream;
 
 pub mod clientbound;
 pub mod handler;
@@ -18,7 +21,11 @@ pub enum JavaProtocol {
 }
 
 impl JavaProtocolHandler for JavaProtocol {
-    fn handle_handshake(packet: &serverbound::login::Packet, client: &mut JavaClient) -> () {
+    fn handle_handshake(
+        packet: &serverbound::login::Packet,
+        stream: &mut TcpStream,
+        client: &mut JavaClient,
+    ) -> () {
         match packet {
             // There is not clientbound packet in the handshake state, as the server immediately transitions to the requested state
             // The vanilla server's generated packet output categorizes the Hello Packet as part of login, but it's only used in handshake
@@ -31,13 +38,14 @@ impl JavaProtocolHandler for JavaProtocol {
 
     fn handle_status(
         packet: &serverbound::status::Packet,
+        stream: &mut TcpStream,
         client: &mut JavaClient,
-    ) -> clientbound::status::Packet {
+    ) {
         match packet {
             serverbound::status::Packet::PingRequest(Some(data)) => {
                 clientbound::status::Packet::PongResponse(Some(clientbound::status::PongResponse {
                     timestamp: data.timestamp,
-                }))
+                }));
             }
 
             serverbound::status::Packet::StatusRequest => {
@@ -52,7 +60,7 @@ impl JavaProtocolHandler for JavaProtocol {
                         sample: vec![],
                     },
                     description: Description {
-                        text: "Lukes rust dev server".into(),
+                        text: "Luke's WIP dev server (Rust)".into(),
                     },
                     favicon: None,
                     enforces_secure_chat: false,
@@ -61,7 +69,7 @@ impl JavaProtocolHandler for JavaProtocol {
                 let response = clientbound::status::StatusResponse {
                     json_response: serde_json::to_string(&json_response).unwrap(),
                 };
-                clientbound::status::Packet::StatusResponse(Some(response))
+
             }
             serverbound::status::Packet::LegacyPing(Some(data)) => {
                 let mut response = clientbound::status::LegacyPong {
@@ -81,24 +89,15 @@ impl JavaProtocolHandler for JavaProtocol {
         }
     }
 
-    fn handle_login(
-        packet: &serverbound::login::Packet,
-        client: &mut JavaClient,
-    ) -> clientbound::login::Packet {
+    fn handle_login(packet: &serverbound::login::Packet, stream: &mut TcpStream, client: &mut JavaClient) {
         todo!()
     }
 
-    fn handle_configuration(
-        packet: &Packet,
-        client: &mut JavaClient,
-    ) -> clientbound::configuration::Packet {
+    fn handle_configuration(packet: &Packet, stream: &mut TcpStream, client: &mut JavaClient) {
         todo!()
     }
 
-    fn handle_play(
-        packet: &serverbound::play::Packet,
-        client: &mut JavaClient,
-    ) -> clientbound::play::Packet {
+    fn handle_play(packet: &serverbound::play::Packet, stream: &mut TcpStream, client: &mut JavaClient) {
         todo!()
     }
 }

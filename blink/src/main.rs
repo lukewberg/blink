@@ -17,7 +17,9 @@ fn main() -> io::Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                java_handler.handle_client(stream);
+                if let Err(e) = java_handler.handle_client(stream) {
+                    eprintln!("Error while handling client: {:?}", e);
+                }
             }
             Err(_) => todo!(),
         }

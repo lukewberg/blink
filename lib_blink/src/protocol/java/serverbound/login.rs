@@ -9,6 +9,7 @@ use crate::{
     types::VarInt,
 };
 
+#[derive(Debug)]
 pub enum Packet {
     CookieResponse,
     CustomQueryAnswer,
@@ -35,6 +36,7 @@ impl Identify for Packet {
         R: crate::protocol::traits::ReadMCTypesExt,
     {
         let packet_header = PacketHeader::decode(reader).unwrap();
+        println!("Received packet: {:?}", Self::get_id(packet_header.packet_id));
         match Self::get_id(packet_header.packet_id) {
             Packet::CookieResponse => Ok(todo!()),
             Packet::CustomQueryAnswer => Ok(todo!()),
@@ -63,6 +65,7 @@ impl Identify for Packet {
     // }
 }
 
+#[derive(Debug)]
 #[derive(JavaPacket)]
 pub struct Hello {
     pub protocol_version: VarInt,

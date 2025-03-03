@@ -169,16 +169,16 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
     };
     let gen = quote! {
         impl crate::traits::NetworkPacket for #name where #name : Sized {
-            fn encode(mut self: #name, packet_id: u8) -> Result<Vec<u8>, crate::types::SerdeError> {
+            fn encode(mut self: #name, stream: &mut TcpStream, packet_id: u8) -> Result<(), crate::types::SerdeError> {
                 let packet_id = crate::types::VarInt { value: packet_id as i32 }.encode();
                 let mut packet_length: usize = packet_id.len();
                 #field_sizes
-                packet_length = packet_length + crate::types::VarInt::expected_size(packet_length as i32);
-                let mut buffer: Vec<u8> = Vec::with_capacity(packet_length);
-                buffer.write_all((crate::types::VarInt { value: packet_length as i32 }.encode()).as_slice())?;
-                buffer.write_all(packet_id.as_slice())?;
+                let expected_header_size_field_size = crate::types::VarInt::expected_size(packet_length as i32);
+                packet_length = packet_length + expected_header_size_field_size;
+                stream.write_all((crate::types::VarInt { value: (packet_length - expected_header_size_field_size) as i32 }.encode()).as_slice())?;
+                stream.write_all(packet_id.as_slice())?;
                 #encoded_fields
-                Ok(buffer)
+                Ok(())
             }
 
             fn decode<R>(buffer: &mut R) -> Result<Self, crate::types::SerdeError> where R: crate::protocol::traits::ReadMCTypesExt {
@@ -233,7 +233,7 @@ pub fn protocol_handler(
         let fn_name = Ident::new(&format!("handle_{}", variant_name.to_string().to_lowercase()), enum_name.span());
 
         Some(quote! {
-            fn #fn_name(packet: &#variant_value_in, client: &mut #arg_ident) -> #variant_value_out;
+            fn #fn_name(packet: &#variant_value_in, stream: &mut TcpStream, client: &mut #arg_ident);
         })
     }).collect::<Vec<_>>();
 

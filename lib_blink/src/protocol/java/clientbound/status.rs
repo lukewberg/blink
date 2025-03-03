@@ -1,6 +1,7 @@
 use blink_macros::JavaPacket;
 use byteorder::WriteBytesExt;
 use std::io::Write;
+use std::net::TcpStream;
 use zerocopy::IntoBytes;
 use serde::{Deserialize, Serialize};
 use crate::protocol::traits::{Identify, ReadMCTypesExt, WriteMCTypesExt};
@@ -40,33 +41,9 @@ impl Identify for Packet {
     }
 }
 
-// #[derive(JavaPacket)]
+#[derive(JavaPacket)]
 pub struct StatusResponse {
     pub json_response: String,
-}
-
-impl crate::traits::NetworkPacket for StatusResponse
-where
-    StatusResponse: Sized,
-{
-    fn encode(mut self: StatusResponse, packet_id: u8) -> Result<Vec<u8>, crate::types::SerdeError> {
-        let packet_id = crate::types::VarInt { value: packet_id as i32 }.encode();
-        let mut packet_length: usize = packet_id.len();
-        packet_length = packet_length + VarInt::expected_size(self.json_response.len() as i32) + self.json_response.len();
-        packet_length = packet_length + crate::types::VarInt::expected_size(packet_length as i32);
-        let mut buffer: Vec<u8> = Vec::with_capacity(packet_length);
-        buffer.write_all((crate::types::VarInt { value: packet_length as i32 }.encode()).as_slice())?;
-        buffer.write_all(packet_id.as_slice())?;
-        buffer.write_string(self.json_response)?;
-        Ok(buffer)
-    }
-    fn decode<R>(buffer: &mut R) -> Result<Self, crate::types::SerdeError>
-    where
-        R: crate::protocol::traits::ReadMCTypesExt,
-    {
-        let json_response = buffer.read_string()?;
-        Ok(Self { json_response })
-    }
 }
 
 #[derive(Serialize)]
@@ -118,15 +95,14 @@ pub struct LegacyPong {
 }
 
 impl NetworkPacket for LegacyPong {
-    fn encode(self, packet_id: u8) -> Result<Vec<u8>, SerdeError> {
-        let mut buf = Vec::new();
-        buf.write_u8(self.packet_id)?;
-        buf.write_u16::<byteorder::BigEndian>(self.str_len)?;
+    fn encode(self, stream: &mut TcpStream, packet_id: u8) -> Result<Vec<u8>, SerdeError> {
+        stream.write_u8(self.packet_id)?;
+        stream.write_u16::<byteorder::BigEndian>(self.str_len)?;
         let resp_str = self.payload.encode_utf16().collect::<Vec<u16>>().iter().map(|n| u16::from_be_bytes([(n & 0xFF) as u8, (n >> 8) as u8])).collect::<Vec<u16>>();
         unsafe {
-            buf.append(&mut resp_str.align_to::<u8>().1.to_vec());
+            stream.append(&mut resp_str.align_to::<u8>().1.to_vec());
         }
-        Ok(buf)
+        Ok(())
     }
 
     fn decode<R>(reader: &mut R) -> Result<Self, SerdeError>

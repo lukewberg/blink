@@ -2,6 +2,7 @@ use std::io::Read;
 
 use thiserror::Error;
 
+#[derive(Debug)]
 pub struct VarInt {
     pub value: i32,
 }

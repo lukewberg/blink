@@ -11,3 +11,11 @@ pub enum SerdeError {
     #[error("")]
     Io(#[from] std::io::Error),
 }
+
+#[derive(Error, Debug)]
+pub enum HandlerError {
+    #[error("")]
+    Serde(#[from] SerdeError),
+    #[error("")]
+    Io(#[from] std::io::Error),
+}
