@@ -10,7 +10,7 @@ pub enum Packet {
     Pong,
     ResourcePack,
     SelectKnownPacks,
-    Unknown
+    Unknown,
 }
 
 impl Identify for Packet {
@@ -30,11 +30,11 @@ impl Identify for Packet {
 
     fn id_and_wrap<R>(reader: &mut R) -> Result<Self, SerdeError>
     where
-        R: ReadMCTypesExt
+        R: ReadMCTypesExt,
     {
         todo!()
     }
-    
+
     // fn get_id(&self) -> u8 {
     //     match self {
     //         Packet::ClientInformation => 0,

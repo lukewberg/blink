@@ -1,6 +1,6 @@
 use proc_macro2::Ident;
-use quote::quote;
-use syn::{parse_macro_input, ItemEnum, LitStr, Type};
+use quote::{format_ident, quote};
+use syn::{parse_macro_input, ItemEnum, Type};
 
 #[proc_macro_derive(BedrockPacket)]
 pub fn packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -71,19 +71,25 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
                             match &(*(ident.to_string())) {
                                 "String" => {
                                     result = quote! {
-                                        buffer.write_string(self.#field_name)?;
+                                        stream.write_string(self.#field_name)?;
                                     }
                                 }
                                 "VarInt" => {
                                     result = quote! {
-                                        buffer.write_varint(&mut self.#field_name)?;
+                                        stream.write_varint(&mut self.#field_name)?;
                                     }
                                 }
-                                "i8" | "i16" | "i32" | "i64" | "i128" | "u8" | "u16" | "u32"
-                                | "u64" | "u128" | "f32" | "f64" | "usize" | "iusize" => {
+                                "u8" => {
                                     result = quote! {
-                                        buffer.extend_from_slice(&self.#field_name.to_be_bytes());
-                                        // buffer.write_#ident::<BigEndian>().unwarap();
+                                        stream.write_u8(self.#field_name)?;
+                                    }
+                                }
+                                "i8" | "i16" | "i32" | "i64" | "i128" | "u16" | "u32"
+                                | "u64" | "u128" | "f32" | "f64" | "usize" | "iusize" => {
+                                    let write_method = format_ident!("write_{}", ident.to_string());
+                                    result = quote! {
+                                        // stream.write_all(&self.#field_name.to_be_bytes());
+                                        stream.#write_method::<byteorder::BigEndian>(self.#field_name)?;
                                     }
                                 }
                                 _ => (),
@@ -169,7 +175,7 @@ fn impl_bedrock_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream 
     };
     let gen = quote! {
         impl crate::traits::NetworkPacket for #name where #name : Sized {
-            fn encode(mut self: #name, stream: &mut TcpStream, packet_id: u8) -> Result<(), crate::types::SerdeError> {
+            fn encode<R>(mut self: #name, stream: &mut R, packet_id: u8) -> Result<(), crate::types::SerdeError> where R: crate::protocol::traits::WriteMCTypesExt {
                 let packet_id = crate::types::VarInt { value: packet_id as i32 }.encode();
                 let mut packet_length: usize = packet_id.len();
                 #field_sizes
@@ -197,11 +203,6 @@ pub fn java_packet_macro_derive(input: proc_macro::TokenStream) -> proc_macro::T
 
 fn impl_java_packet_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     impl_bedrock_packet_macro(ast)
-}
-
-#[derive(Default)]
-struct ProtocolHandlerArgs {
-    test: Option<LitStr>,
 }
 
 #[proc_macro_attribute]
@@ -233,7 +234,7 @@ pub fn protocol_handler(
         let fn_name = Ident::new(&format!("handle_{}", variant_name.to_string().to_lowercase()), enum_name.span());
 
         Some(quote! {
-            fn #fn_name(packet: &#variant_value_in, stream: &mut TcpStream, client: &mut #arg_ident);
+            fn #fn_name(packet: &#variant_value_in, stream: &mut TcpStream, client: &mut #arg_ident) -> Result<crate::types::StreamStatus, crate::types::SerdeError>;
         })
     }).collect::<Vec<_>>();
 

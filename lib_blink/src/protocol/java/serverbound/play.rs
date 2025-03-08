@@ -124,13 +124,13 @@ impl Identify for Packet {
             55 => Packet::TeleportToEntity,
             57 => Packet::UseItem,
             56 => Packet::UseItemOn,
-            _ => Packet::Unknown
+            _ => Packet::Unknown,
         }
     }
 
     fn id_and_wrap<R>(reader: &mut R) -> Result<Self, SerdeError>
     where
-        R: ReadMCTypesExt
+        R: ReadMCTypesExt,
     {
         todo!()
     }

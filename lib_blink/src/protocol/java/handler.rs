@@ -1,8 +1,7 @@
 use crate::protocol::java::{serverbound, JavaProtocol, JavaProtocolHandler};
 use crate::protocol::traits::Identify;
-use crate::types::{ConnectionState, HandlerError, JavaClient, SerdeError};
+use crate::types::{ConnectionState, HandlerError, JavaClient, StreamStatus};
 use ahash::AHashMap;
-use std::io::Write;
 use std::net::{IpAddr, Shutdown, TcpStream};
 
 pub struct JavaHandler {
@@ -42,6 +41,7 @@ impl JavaHandler {
         with a state, start fresh or pick up where it left off
         */
         let client = self.resolve_client(&stream);
+        let mut stream_status = StreamStatus::Open;
 
         // Create BuffReader to read packet data off the wire
         // let mut packet_reader = BufReader::new(stream);
@@ -53,35 +53,30 @@ impl JavaHandler {
                 match state {
                     ConnectionState::Handshake => {
                         let packet = serverbound::login::Packet::id_and_wrap(&mut stream)?;
-                        JavaProtocol::handle_handshake(&packet, &mut stream, client);
+                        JavaProtocol::handle_handshake(&packet, &mut stream, client)?;
                         continue;
                     }
                     ConnectionState::Status => {
                         let packet = serverbound::status::Packet::id_and_wrap(&mut stream)?;
-                        JavaProtocol::handle_status(&packet, &mut stream, client);
+                        stream_status = JavaProtocol::handle_status(&packet, &mut stream, client)?;
                     }
-                    ConnectionState::Login => (),
+                    ConnectionState::Login => {
+                        let packet = serverbound::login::Packet::id_and_wrap(&mut stream)?;
+                        stream_status = JavaProtocol::handle_login(&packet, &mut stream, client)?;
+                    }
                     ConnectionState::Transfer => (),
                     ConnectionState::Play => (),
                     ConnectionState::Configuration => (),
                 };
-                // if let Some(response_packet) = response_packet {
-                //     let response_packet_slice = response_packet.as_slice();
-                //     stream.write_all(response_packet_slice)?;
-                //     println!("Wrote response packet");
-                // } else {
-                //     println!("No response packet");
-                //     stream.shutdown(Shutdown::Both)?;
-                //     return Ok(()); // End the connection
-                // }
+                match stream_status {
+                    StreamStatus::Open => (),
+                    StreamStatus::Closed => {
+                        stream.shutdown(Shutdown::Both)?;
+                        self.clients.remove(&stream.peer_addr()?.ip());
+                        return Ok(()); // End the connection
+                    }
+                }
             }
         }
-
-
-        // println!("Packet length: {:?}", *packet_header.length);
-        // if packet_header.packet_id == 0 {
-        //     //     This is the Hello handshake packet
-        //     println!("Received hello packet");
-        // }
     }
 }

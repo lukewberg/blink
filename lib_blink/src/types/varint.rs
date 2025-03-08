@@ -66,7 +66,7 @@ impl VarInt {
             result.push(byte | 0b10000000);
         }
     }
-    
+
     pub fn expected_size(mut value: i32) -> usize {
         let mut size = 0;
 
@@ -83,7 +83,7 @@ impl VarInt {
             }
         }
 
-        size 
+        size
     }
 
     /// Zig-zag encodes an i32 and returns a u32

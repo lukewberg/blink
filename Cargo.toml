@@ -2,6 +2,10 @@
 members = ["lib_blink", "blink", "blink_macros"]
 resolver = "2"
 
+[profile.dev]
+opt-level = 0
+debug = "full"
+
 [workspace.dependencies]
 ahash = "0.8.11"
 byteorder = "1.5.0"

@@ -1,10 +1,10 @@
-use std::io::{BufRead, BufReader, Write};
-
 use crate::protocol::java::PacketHeader;
+use crate::protocol::java::TcpStream;
 use crate::protocol::traits::{Identify, ReadMCTypesExt};
 use crate::traits::NetworkPacket;
 use crate::types::SerdeError;
 use blink_macros::JavaPacket;
+use std::io::{BufRead, BufReader, Write};
 
 #[derive(Debug)]
 pub enum Packet {
@@ -57,23 +57,14 @@ impl Identify for Packet {
             }
         }
     }
-
-    fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
-        match self {
-            Packet::PingRequest(Some(packet)) => Some(packet.encode(1).unwrap()),
-            _ => None,
-        }
-    }
 }
 
-#[derive(Debug)]
-#[derive(JavaPacket)]
+#[derive(Debug, JavaPacket)]
 pub struct PingRequest {
     pub timestamp: i64,
 }
 
-#[derive(Debug)]
-#[derive(JavaPacket)]
+#[derive(Debug, JavaPacket)]
 pub struct LegacyPing {
     pub packet_id: u8,
     pub payload: u8,

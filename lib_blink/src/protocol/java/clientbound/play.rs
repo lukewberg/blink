@@ -262,7 +262,7 @@ impl Identify for Packet {
 
     fn id_and_wrap<R>(reader: &mut R) -> Result<Self, SerdeError>
     where
-        R: ReadMCTypesExt
+        R: ReadMCTypesExt,
     {
         todo!()
     }

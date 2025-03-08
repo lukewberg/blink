@@ -1,8 +1,8 @@
-use std::io::Write;
 use blink_macros::JavaPacket;
+use std::io::Write;
 
 use crate::protocol::traits::WriteMCTypesExt;
-use crate::types::SerdeError;
+use crate::types::{PrefixedArray, SerdeError};
 use crate::{
     protocol::{java::PacketHeader, traits::Identify},
     traits::NetworkPacket,
@@ -36,7 +36,10 @@ impl Identify for Packet {
         R: crate::protocol::traits::ReadMCTypesExt,
     {
         let packet_header = PacketHeader::decode(reader).unwrap();
-        println!("Received packet: {:?}", Self::get_id(packet_header.packet_id));
+        println!(
+            "Received packet: {:?}",
+            Self::get_id(packet_header.packet_id)
+        );
         match Self::get_id(packet_header.packet_id) {
             Packet::CookieResponse => Ok(todo!()),
             Packet::CustomQueryAnswer => Ok(todo!()),
@@ -44,13 +47,6 @@ impl Identify for Packet {
             Packet::Key => Ok(todo!()),
             Packet::LoginAcknowledged => Ok(todo!()),
             Packet::Unknown => Ok(todo!()),
-        }
-    }
-
-    fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
-        match self {
-            Packet::Hello(Some(packet)) => Some(packet.encode(0).unwrap()),
-            _ => None,
         }
     }
 
@@ -65,11 +61,16 @@ impl Identify for Packet {
     // }
 }
 
-#[derive(Debug)]
-#[derive(JavaPacket)]
+#[derive(Debug, JavaPacket)]
 pub struct Hello {
     pub protocol_version: VarInt,
     pub server_address: String,
     pub server_port: u16,
     pub next_state: VarInt,
 }
+
+// #[derive(Debug, JavaPacket)]
+// pub struct Key {
+//     pub shared_secret: PrefixedArray<u8>,
+//     pub verify_token: PrefixedArray<u8>,
+// }

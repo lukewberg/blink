@@ -19,7 +19,7 @@ pub enum Packet {
     Transfer,
     UpdateEnabledFeatures,
     UpdateTags,
-    Unknown
+    Unknown,
 }
 
 impl Identify for Packet {
@@ -42,13 +42,13 @@ impl Identify for Packet {
             11 => Packet::Transfer,
             12 => Packet::UpdateEnabledFeatures,
             13 => Packet::UpdateTags,
-            _ => Packet::Unknown
+            _ => Packet::Unknown,
         }
     }
 
     fn id_and_wrap<R>(reader: &mut R) -> Result<Self, SerdeError>
     where
-        R: ReadMCTypesExt
+        R: ReadMCTypesExt,
     {
         todo!()
     }
