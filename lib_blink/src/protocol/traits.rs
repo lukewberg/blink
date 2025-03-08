@@ -1,7 +1,5 @@
-use std::io::Write;
-
 use crate::types::{SerdeError, VarInt};
-use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{ReadBytesExt, WriteBytesExt};
 use zerocopy::IntoBytes;
 
 pub trait Identify: Sized {
@@ -11,15 +9,18 @@ pub trait Identify: Sized {
     where
         R: ReadMCTypesExt;
 
-    fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
-        None
-    }
+    // fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
+    //     None
+    // }
 }
 
 // Define custom traits as needed
 pub trait ReadMCTypesExt: ReadBytesExt {
     fn read_varint(&mut self) -> Result<VarInt, SerdeError>;
     fn read_string(&mut self) -> Result<String, SerdeError>;
+    fn read_prefixed_array<U>(&mut self) -> Result<Vec<U>, SerdeError>
+    where
+        U: Sized;
 }
 
 pub trait WriteMCTypesExt: WriteBytesExt {
@@ -43,6 +44,14 @@ where
         let mut buff: Vec<u8> = vec![0u8; length];
         self.read_exact(&mut buff)?;
         Ok(String::from_utf8(buff)?)
+    }
+
+    fn read_prefixed_array<U>(&mut self) -> Result<Vec<U>, SerdeError>
+    where
+        U: Sized,
+    {
+        let length = self.read_varint()?;
+        todo!()
     }
 }
 

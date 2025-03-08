@@ -5,6 +5,11 @@ pub struct Status;
 pub struct Login;
 pub struct Play;
 
+pub enum StreamStatus {
+    Open,
+    Closed,
+}
+
 pub enum ConnectionState {
     Handshake,
     Status,

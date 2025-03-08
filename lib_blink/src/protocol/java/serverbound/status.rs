@@ -1,5 +1,5 @@
+use crate::protocol::java::TcpStream;
 use std::io::{BufRead, BufReader, Write};
-
 use crate::protocol::java::PacketHeader;
 use crate::protocol::traits::{Identify, ReadMCTypesExt};
 use crate::traits::NetworkPacket;
@@ -57,13 +57,6 @@ impl Identify for Packet {
             }
         }
     }
-
-    fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
-        match self {
-            Packet::PingRequest(Some(packet)) => Some(packet.encode(1).unwrap()),
-            _ => None,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -71,6 +64,7 @@ impl Identify for Packet {
 pub struct PingRequest {
     pub timestamp: i64,
 }
+
 
 #[derive(Debug)]
 #[derive(JavaPacket)]

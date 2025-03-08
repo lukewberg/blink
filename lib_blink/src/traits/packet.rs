@@ -5,12 +5,13 @@ use crate::{
     types::{SerdeError, VarInt},
 };
 use flate2::read::ZlibDecoder;
+use crate::protocol::traits::WriteMCTypesExt;
 
 pub const MAX_SIZE: usize = 2097151;
 pub static COMPRESSION_THRESHOLD: AtomicUsize = AtomicUsize::new(0);
 
 pub trait NetworkPacket: Sized {
-    fn encode(self, stream: &mut TcpStream, packet_id: u8) -> Result<(), SerdeError>;
+    fn encode<R>(self, stream: &mut R, packet_id: u8) -> Result<(), SerdeError> where R: WriteMCTypesExt;
     fn decode<R>(buffer: &mut R) -> Result<Self, SerdeError>
     where
         R: ReadMCTypesExt;

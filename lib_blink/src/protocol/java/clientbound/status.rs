@@ -30,15 +30,6 @@ impl Identify for Packet {
     {
         todo!()
     }
-
-    fn get_wrapped_as_bytes(self) -> Option<Vec<u8>> {
-        match self {
-            Packet::PongResponse(Some(packet)) => Some(packet.encode(1).unwrap()),
-            Packet::StatusResponse(Some(packet)) => Some(packet.encode(0).unwrap()),
-            Packet::LegacyPong(Some(packet)) => Some(packet.encode(0).unwrap()),
-            _ => None,
-        }
-    }
 }
 
 #[derive(JavaPacket)]
@@ -95,12 +86,12 @@ pub struct LegacyPong {
 }
 
 impl NetworkPacket for LegacyPong {
-    fn encode(self, stream: &mut TcpStream, packet_id: u8) -> Result<Vec<u8>, SerdeError> {
+    fn encode<R>(self, stream: &mut R, packet_id: u8) -> Result<(), SerdeError> where R: WriteMCTypesExt {
         stream.write_u8(self.packet_id)?;
         stream.write_u16::<byteorder::BigEndian>(self.str_len)?;
         let resp_str = self.payload.encode_utf16().collect::<Vec<u16>>().iter().map(|n| u16::from_be_bytes([(n & 0xFF) as u8, (n >> 8) as u8])).collect::<Vec<u16>>();
         unsafe {
-            stream.append(&mut resp_str.align_to::<u8>().1.to_vec());
+            stream.write_all(resp_str.align_to::<u8>().1)?;
         }
         Ok(())
     }

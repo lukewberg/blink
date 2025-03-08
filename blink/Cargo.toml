@@ -3,10 +3,6 @@ name = "blink"
 version = "0.1.0"
 edition = "2021"
 
-[profile.dev]
-opt-level = 0
-debug = "full"
-
 [dependencies]
 lib_blink = { path = "../lib_blink" }
 tokio.workspace = true
